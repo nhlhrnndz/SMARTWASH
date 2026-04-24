@@ -24,29 +24,36 @@ $forgotSuccess = '';
 // ──────────────────────────────────────────
 //  LOGIN
 // ──────────────────────────────────────────
+// Replace the login query section in index.php (around line 25-35)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'login') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
-    $role     = $_POST['role'] ?? '';
- 
+    $role     = $_POST['role'] ?? ''; // 'supervisor' or 'maintenance'
+
     if ($username && $password && $role) {
-        $pdo    = getDB();
-        $dbRole = ($role === 'supervisor') ? 'supervisor' : 'staff';
-        $stmt   = $pdo->prepare("SELECT * FROM users WHERE username = ? AND (role = ? OR role = 'admin') AND status = 'active' LIMIT 1");
-        $stmt->execute([$username, $dbRole]);
+        $pdo = getDB();
+        
+        // Simple role check - supervisor can only login as supervisor
+        // maintenance can only login as maintenance
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND role = ? AND status = 'active' LIMIT 1");
+        $stmt->execute([$username, $role]);
         $user = $stmt->fetch();
- 
+
         if ($user && password_verify($password, $user['password'])) {
             $_SESSION['user_id']   = $user['id'];
             $_SESSION['username']  = $user['username'];
             $_SESSION['full_name'] = $user['full_name'];
             $_SESSION['role']      = $user['role'];
-            header(in_array($user['role'], ['supervisor', 'admin'])
-                ? 'Location: pages/supervisor/dashboard.php'
-                : 'Location: pages/maintenance/home.php');
+            
+            // Redirect based on role
+            if ($user['role'] === 'supervisor') {
+                header('Location: pages/supervisor/dashboard.php');
+            } else {
+                header('Location: pages/maintenance/home.php');
+            }
             exit;
         } else {
-            $loginError = 'Invalid username or password, or account not yet active.';
+            $loginError = 'Invalid username or password.';
         }
     } else {
         $loginError = 'Please fill in all fields.';
@@ -87,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'regis
             $regError = 'A registration request with this username is already pending.';
         } else {
             $hashed = password_hash($password, PASSWORD_DEFAULT);
-            $dbRole = ($role === 'supervisor') ? 'supervisor' : 'staff';
+            $dbRole = ($role === 'supervisor') ? 'supervisor' : 'maintenance';
             $stmt   = $pdo->prepare("INSERT INTO registration_requests (full_name, username, password, role) VALUES (?, ?, ?, ?)");
             $stmt->execute([$fullName, $username, $hashed, $dbRole]);
             $regSuccess = 'Account request submitted! Please wait for administrator approval before logging in.';

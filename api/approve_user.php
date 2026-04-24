@@ -56,16 +56,16 @@ try {
         }
 
         // Insert into users table
-        $insertUser = $pdo->prepare("
-            INSERT INTO users (full_name, username, password, role, status, created_at) 
-            VALUES (?, ?, ?, ?, 'active', NOW())
-        ");
-        $insertUser->execute([
-            $request['full_name'],
-            $request['username'],
-            $request['password'], // Already hashed from registration
-            $request['role']
-        ]);
+$insertUser = $pdo->prepare("
+    INSERT INTO users (full_name, username, password, role, status, created_at) 
+    VALUES (?, ?, ?, ?, 'active', NOW())
+");
+$insertUser->execute([
+    $request['full_name'],
+    $request['username'],
+    $request['password'],
+    $request['role'] // 'supervisor' or 'maintenance'
+]);
 
         $newUserId = $pdo->lastInsertId();
 
