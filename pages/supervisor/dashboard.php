@@ -606,6 +606,14 @@
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+
+        .logout-btn:hover {
+    background: var(--red-deep);
+    color: var(--white);
+}
+.logout-btn:hover svg {
+    stroke: var(--white);
+}
     </style>
 </head>
 <body>
@@ -651,24 +659,32 @@
                 <h1>Supervisor Dashboard</h1>
                 <p>Overview of all restroom facilities and real-time status</p>
             </div>
-            <div class="top-bar-right">
-                <div class="notification-bell" id="notificationBell">
-                    <div class="bell-icon">
-                        <svg viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
-                        </svg>
-                    </div>
-                    <span class="notification-badge" id="notificationCount">3</span>
-                </div>
-                <div class="user-menu">
-                    <div class="user-info">
-                        <div class="user-name">John M. Dela Cruz</div>
-                        <div class="user-role">Supervisor</div>
-                    </div>
-                    <div class="user-avatar">JD</div>
-                </div>
-            </div>
+<div class="top-bar-right">
+    <div class="notification-bell" id="notificationBell">
+        <div class="bell-icon">
+            <svg viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
+            </svg>
         </div>
+        <span class="notification-badge" id="notificationCount">3</span>
+    </div>
+    <div class="user-menu">
+        <div class="user-info">
+            <div class="user-name">John M. Dela Cruz</div>
+            <div class="user-role">Supervisor</div>
+        </div>
+        <div class="user-avatar">JD</div>
+    </div>
+    <a href="../../auth/logout.php" class="logout-btn" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--light); border-radius: 8px; color: var(--text-mid); text-decoration: none; transition: all 0.2s;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        Logout
+    </a>
+</div>
+    </div>      <!-- Closes top-bar - ADD THIS LINE! -->
 
         <!-- Stats Cards -->
         <div class="stats-grid">
