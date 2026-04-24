@@ -5,13 +5,15 @@
 // ============================================================
 session_start();
  
+/*
 // Already logged in? Redirect
 if (isset($_SESSION['user_id'])) {
     header(in_array($_SESSION['role'], ['supervisor', 'admin'])
         ? 'Location: pages/supervisor/dashboard.php'
         : 'Location: pages/maintenance/home.php');
     exit;
-}
+}*/
+
  
 require_once 'config/db.php';
  
