@@ -1,3 +1,43 @@
+<?php
+// ============================================================
+//  SmartWash — Maintenance Home Page
+//  File: pages/maintenance/home.php
+// ============================================================
+
+// Require session guard - this ensures only logged-in users can access
+require_once '../../auth/session.php';
+
+// Only maintenance staff can access this page
+requireRole(['maintenance']);
+
+// Get current user info
+$user = currentUser();
+$fullName = $user['full_name'];
+$username = $user['username'];
+
+// Get user initials for avatar
+$nameParts = explode(' ', $fullName);
+$initials = '';
+foreach ($nameParts as $part) {
+    if (strlen($part) > 0 && strlen($initials) < 2) {
+        $initials .= strtoupper($part[0]);
+    }
+}
+if (strlen($initials) < 2 && strlen($fullName) > 0) {
+    $initials = strtoupper(substr($fullName, 0, 2));
+}
+
+// Get current time greeting
+$hour = date('H');
+$greeting = '';
+if ($hour < 12) {
+    $greeting = 'Good morning';
+} elseif ($hour < 18) {
+    $greeting = 'Good afternoon';
+} else {
+    $greeting = 'Good evening';
+}
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -218,6 +258,24 @@
             border-radius: 20px;
             min-width: 18px;
             text-align: center;
+        }
+
+        .logout-btn {
+            background: none;
+            border: 1px solid var(--gray-border);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-mid);
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: var(--red-deep);
+            border-color: var(--red-deep);
+            color: var(--white);
         }
 
         .user-menu {
@@ -647,21 +705,6 @@
             font-weight: 500;
         }
 
-        /* Demo Badge */
-        .demo-badge {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--yellow-warning);
-            color: var(--text-dark);
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            z-index: 1000;
-            cursor: pointer;
-        }
-
         /* Empty State */
         .empty-state {
             text-align: center;
@@ -726,7 +769,7 @@
                     Home
                 </a>
             </div>
-            <div class="nav-item"><a href="restroom-status.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>My Restrooms</a></div>
+            <div class="nav-item"><a href="restroom_status.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>My Restrooms</a></div>
             <div class="nav-item"><a href="checklist.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h6a1 1 0 100-2H7zm0 4a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>Checklist</a></div>
             <div class="nav-item"><a href="submissions.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>My Submissions</a></div>
             <div class="nav-item"><a href="notifications.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>Notifications</a></div>
@@ -747,14 +790,17 @@
                             <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
                         </svg>
                     </div>
-                    <span class="notification-badge" id="notificationCount">4</span>
+                    <span class="notification-badge" id="notificationCount">0</span>
                 </div>
+                <form method="POST" action="../../auth/logout.php" style="margin:0;">
+                    <button type="submit" class="logout-btn">Logout</button>
+                </form>
                 <div class="user-menu">
                     <div class="user-info">
-                        <div class="user-name" id="userName">Rey M. Santos</div>
+                        <div class="user-name" id="userName"><?php echo htmlspecialchars($fullName); ?></div>
                         <div class="user-role">Maintenance Staff</div>
                     </div>
-                    <div class="user-avatar" id="userAvatar">RS</div>
+                    <div class="user-avatar" id="userAvatar"><?php echo htmlspecialchars($initials); ?></div>
                 </div>
             </div>
         </div>
@@ -762,20 +808,20 @@
         <!-- Welcome Banner -->
         <div class="welcome-banner">
             <div class="welcome-text">
-                <h2>Good morning, Rey! 👋</h2>
-                <p>You have <strong id="taskCountSummary">3</strong> tasks that need your attention today.</p>
+                <h2><?php echo $greeting; ?>, <?php echo htmlspecialchars(explode(' ', $fullName)[0]); ?>! 👋</h2>
+                <p>You have <strong id="taskCountSummary">0</strong> tasks that need your attention today.</p>
             </div>
             <div class="welcome-date" id="currentDate"></div>
         </div>
 
         <!-- Stats Cards -->
         <div class="stats-grid">
-            <div class="stat-card" onclick="location.href='restroom-status.php'">
+            <div class="stat-card" onclick="location.href='restroom_status.php'">
                 <div class="stat-header">
                     <span>My Restrooms</span>
                     <div class="stat-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg></div>
                 </div>
-                <div class="stat-value" id="assignedCount">5</div>
+                <div class="stat-value" id="assignedCount">0</div>
                 <div class="stat-label">Restrooms Assigned</div>
             </div>
             <div class="stat-card" onclick="location.href='notifications.php'">
@@ -783,7 +829,7 @@
                     <span>Pending Tasks</span>
                     <div class="stat-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg></div>
                 </div>
-                <div class="stat-value" id="pendingTasks">3</div>
+                <div class="stat-value" id="pendingTasks">0</div>
                 <div class="stat-label">Need Action</div>
             </div>
             <div class="stat-card" onclick="location.href='submissions.php'">
@@ -791,7 +837,7 @@
                     <span>Completed Today</span>
                     <div class="stat-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>
                 </div>
-                <div class="stat-value" id="completedToday">2</div>
+                <div class="stat-value" id="completedToday">0</div>
                 <div class="stat-label">Tasks Completed</div>
             </div>
             <div class="stat-card" onclick="location.href='checklist.php'">
@@ -799,7 +845,7 @@
                     <span>Pending Checklists</span>
                     <div class="stat-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h6a1 1 0 100-2H7zm0 4a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg></div>
                 </div>
-                <div class="stat-value" id="pendingChecklists">2</div>
+                <div class="stat-value" id="pendingChecklists">0</div>
                 <div class="stat-label">Need Submission</div>
             </div>
         </div>
@@ -813,7 +859,7 @@
                     <a href="notifications.php">View All →</a>
                 </div>
                 <div class="card-body" id="activeTasksList">
-                    <!-- Dynamic content -->
+                    <div class="empty-state">Loading tasks...</div>
                 </div>
             </div>
 
@@ -821,10 +867,10 @@
             <div class="dashboard-card">
                 <div class="card-header">
                     <h3>🚻 My Assigned Restrooms</h3>
-                    <a href="restroom-status.php">View All →</a>
+                    <a href="restroom_status.php">View All →</a>
                 </div>
                 <div class="card-body" id="assignedRestroomsList">
-                    <!-- Dynamic content -->
+                    <div class="empty-state">Loading restrooms...</div>
                 </div>
             </div>
 
@@ -835,7 +881,7 @@
                     <a href="checklist.php">View All →</a>
                 </div>
                 <div class="card-body" id="checklistList">
-                    <!-- Dynamic content -->
+                    <div class="empty-state">Loading checklists...</div>
                 </div>
             </div>
 
@@ -870,32 +916,25 @@
                     <a href="submissions.php">View History →</a>
                 </div>
                 <div class="card-body" id="recentActivityList">
-                    <!-- Dynamic content -->
+                    <div class="empty-state">Loading activity...</div>
                 </div>
             </div>
         </div>
     </main>
 </div>
 
-<!-- Demo Mode Indicator -->
-<div class="demo-badge" onclick="toggleDemoMode()" title="Click to toggle between Demo and Live mode">
-    🧪 DEMO MODE | Using Sample Data
-</div>
-
 <script>
 // =============================================
 // CONFIGURATION
 // =============================================
-const USE_DEMO_MODE = true;
+const USE_DEMO_MODE = true;  // Set to false when API is ready
 const API_BASE = '../../api/';
+const USER_ID = <?php echo json_encode($user['id']); ?>;
 
 // =============================================
-// DEMO DATA
+// DEMO DATA (Replace with API calls when production ready)
 // =============================================
 const DEMO_DATA = {
-    staffName: 'Rey M. Santos',
-    staffInitials: 'RS',
-    
     assignedRestrooms: [
         { id: 1, name: 'GLR1 - Ground Left', soap_level: 85, air_quality: 32, has_alert: false },
         { id: 2, name: 'GLR2 - Ground Right', soap_level: 45, air_quality: 28, has_alert: true, alert_type: 'vape' },
@@ -912,17 +951,17 @@ const DEMO_DATA = {
     ],
     
     checklists: [
-        { id: 1, restroom_name: 'GLR1 - Ground Left', due_date: '2024-01-15', status: 'pending' },
-        { id: 2, restroom_name: 'GLR2 - Ground Right', due_date: '2024-01-15', status: 'pending' },
-        { id: 3, restroom_name: '1F-FR - 1st Floor Front', due_date: '2024-01-14', status: 'completed' },
-        { id: 4, restroom_name: '1F-RR - 1st Floor Rear', due_date: '2024-01-15', status: 'pending' }
+        { id: 1, restroom_name: 'GLR1 - Ground Left', due_date: '2026-04-24', status: 'pending' },
+        { id: 2, restroom_name: 'GLR2 - Ground Right', due_date: '2026-04-24', status: 'pending' },
+        { id: 3, restroom_name: '1F-FR - 1st Floor Front', due_date: '2026-04-23', status: 'completed' },
+        { id: 4, restroom_name: '1F-RR - 1st Floor Rear', due_date: '2026-04-24', status: 'pending' }
     ],
     
     recentActivity: [
-        { action: 'Completed checklist for 1F-RR', timestamp: '2024-01-15 09:30:00' },
-        { action: 'Refilled soap at GLR1', timestamp: '2024-01-15 08:45:00' },
-        { action: 'Reported vape incident at GLR2', timestamp: '2024-01-15 08:15:00' },
-        { action: 'Cleaned 2F-MR restroom', timestamp: '2024-01-14 16:30:00' }
+        { action: 'Completed checklist for 1F-RR', timestamp: '2026-04-24 09:30:00' },
+        { action: 'Refilled soap at GLR1', timestamp: '2026-04-24 08:45:00' },
+        { action: 'Reported vape incident at GLR2', timestamp: '2026-04-24 08:15:00' },
+        { action: 'Cleaned 2F-MR restroom', timestamp: '2026-04-23 16:30:00' }
     ]
 };
 
@@ -1035,6 +1074,9 @@ function handleTaskAction(action, taskId) {
             displayActiveTasks();
             updateStats();
         }
+    } else {
+        // TODO: Call API endpoint when ready
+        // fetch(`${API_BASE}resolve_task.php`, { method: 'POST', body: JSON.stringify({ task_id: taskId }) })
     }
 }
 
@@ -1042,7 +1084,7 @@ function viewRestroom(restroomId) {
     if (USE_DEMO_MODE) {
         alert(`[DEMO] Viewing details for restroom #${restroomId}\n\nIn live mode, this would show detailed sensor data.`);
     } else {
-        window.location.href = `restroom-status.php?id=${restroomId}`;
+        window.location.href = `restroom_status.php?id=${restroomId}`;
     }
 }
 
@@ -1063,6 +1105,12 @@ function startChecklistForRestroom(checklistId) {
             checklist.status = 'completed';
             displayChecklists();
             updateStats();
+            // Add to activity
+            DEMO_DATA.recentActivity.unshift({
+                action: `Completed checklist for ${checklist.restroom_name}`,
+                timestamp: new Date().toISOString()
+            });
+            displayRecentActivity();
         }
     }
 }
@@ -1159,12 +1207,6 @@ function setCurrentDate() {
     dateElement.textContent = now.toLocaleDateString('en-US', options);
 }
 
-function toggleDemoMode() {
-    if (confirm('Toggle between Demo and Live mode?\n\nCurrently in: ' + (USE_DEMO_MODE ? 'DEMO MODE' : 'LIVE MODE') + '\n\nNote: Live mode requires API endpoints to be implemented.')) {
-        window.location.reload();
-    }
-}
-
 // =============================================
 // NOTIFICATION FUNCTIONS
 // =============================================
@@ -1172,6 +1214,9 @@ function toggleDemoMode() {
 function fetchNotificationCount() {
     if (USE_DEMO_MODE) {
         document.getElementById('notificationCount').textContent = DEMO_DATA.activeTasks.length;
+    } else {
+        // TODO: Fetch from API
+        // fetch(`${API_BASE}get_notifications.php?user_id=${USER_ID}`)
     }
 }
 
@@ -1187,10 +1232,6 @@ function initDashboard() {
     displayRecentActivity();
     updateStats();
     fetchNotificationCount();
-    
-    // Set user info
-    document.getElementById('userName').textContent = DEMO_DATA.staffName;
-    document.getElementById('userAvatar').textContent = DEMO_DATA.staffInitials;
 }
 
 // Start dashboard when page loads
