@@ -443,8 +443,15 @@
       .left  { display: none; }
       .right { padding: 2rem 1.5rem; }
     }
+
+  .seal img {
+    width: 45%;
+    height: 45%;
+    object-fit: contain;
+  }
   </style>
 </head>
+
 <body>
 
 <div class="page">
@@ -454,23 +461,9 @@
     <div class="left-inner">
 
       <!-- BatStateU seal area -->
-      <div class="seal-ring">
-        <!-- stylized lamp/torch icon echoing BatStateU seal -->
-        <svg viewBox="0 0 68 68" xmlns="http://www.w3.org/2000/svg">
-          <!-- flame -->
-          <path d="M34 8 C28 16 24 22 26 30 C28 36 34 38 34 38 C34 38 40 36 42 30 C44 22 40 16 34 8Z" fill="rgba(255,255,255,0.85)"/>
-          <!-- torch body -->
-          <rect x="30" y="37" width="8" height="14" rx="2" fill="rgba(255,255,255,0.7)"/>
-          <!-- base -->
-          <rect x="26" y="50" width="16" height="4" rx="2" fill="rgba(255,255,255,0.6)"/>
-          <!-- laurel left hint -->
-          <path d="M20 44 C16 40 14 34 18 30" stroke="rgba(255,255,255,0.45)" stroke-width="2" fill="none" stroke-linecap="round"/>
-          <path d="M18 36 C14 32 13 26 17 23" stroke="rgba(255,255,255,0.3)" stroke-width="2" fill="none" stroke-linecap="round"/>
-          <!-- laurel right hint -->
-          <path d="M48 44 C52 40 54 34 50 30" stroke="rgba(255,255,255,0.45)" stroke-width="2" fill="none" stroke-linecap="round"/>
-          <path d="M50 36 C54 32 55 26 51 23" stroke="rgba(255,255,255,0.3)" stroke-width="2" fill="none" stroke-linecap="round"/>
-        </svg>
-      </div>
+      <div class="seal">
+  <img src="assets/images/logo.png" alt="Logo">
+</div>
 
       <p class="batstateu-label">Republic of the Philippines</p>
       <h1 class="univ-name">Batangas State University</h1>
@@ -494,14 +487,6 @@
 
       <p class="sw-tagline">IoT-Based Hygiene & Air Quality Monitoring System for BatStateU Restroom Facilities</p>
 
-      <div class="features">
-        <span class="feat-pill">🚭 Vape Detection</span>
-        <span class="feat-pill">🧴 Soap Monitoring</span>
-        <span class="feat-pill">🌬️ Air Quality</span>
-        <span class="feat-pill">📊 Live Dashboard</span>
-        <span class="feat-pill">🔔 Instant Alerts</span>
-        <span class="feat-pill">🧹 Cleanliness Logs</span>
-      </div>
 
     </div>
   </div>
@@ -571,14 +556,6 @@
         <span>SmartWash</span> © 2025 · BatStateU ARASOF-Nasugbu
       </p>
 
-    </div>
-
-    <!-- SDG badges -->
-    <div class="sdg-strip">
-      <span class="sdg-badge sdg-3">SDG 3</span>
-      <span class="sdg-badge sdg-6">SDG 6</span>
-      <span class="sdg-badge sdg-9">SDG 9</span>
-      <span class="sdg-badge sdg-11">SDG 11</span>
     </div>
   </div>
 </div>
