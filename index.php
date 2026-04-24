@@ -1,44 +1,135 @@
 <?php
+// ============================================================
+//  SmartWash — Login Page (index.php)
+//  Handles: Login, Register Request, Forgot Password Request
+// ============================================================
 session_start();
+ 
+// Already logged in? Redirect
 if (isset($_SESSION['user_id'])) {
-    if (in_array($_SESSION['role'], ['supervisor', 'admin'])) {
-        header('Location: pages/supervisor/dashboard.php');
-    } else {
-        header('Location: pages/maintenance/home.php');
-    }
+    header(in_array($_SESSION['role'], ['supervisor', 'admin'])
+        ? 'Location: pages/supervisor/dashboard.php'
+        : 'Location: pages/maintenance/home.php');
     exit;
 }
-
-$error = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    require_once 'config/db.php';
+ 
+require_once 'config/db.php';
+ 
+$loginError    = '';
+$regError      = '';
+$regSuccess    = '';
+$forgotError   = '';
+$forgotSuccess = '';
+ 
+// ──────────────────────────────────────────
+//  LOGIN
+// ──────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'login') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     $role     = $_POST['role'] ?? '';
-
+ 
     if ($username && $password && $role) {
         $pdo    = getDB();
         $dbRole = ($role === 'supervisor') ? 'supervisor' : 'staff';
-        $stmt   = $pdo->prepare("SELECT * FROM users WHERE username = ? AND (role = ? OR role = 'admin') LIMIT 1");
+        $stmt   = $pdo->prepare("SELECT * FROM users WHERE username = ? AND (role = ? OR role = 'admin') AND status = 'active' LIMIT 1");
         $stmt->execute([$username, $dbRole]);
         $user = $stmt->fetch();
-
+ 
         if ($user && password_verify($password, $user['password'])) {
             $_SESSION['user_id']   = $user['id'];
             $_SESSION['username']  = $user['username'];
             $_SESSION['full_name'] = $user['full_name'];
             $_SESSION['role']      = $user['role'];
-            header(in_array($user['role'], ['supervisor','admin'])
+            header(in_array($user['role'], ['supervisor', 'admin'])
                 ? 'Location: pages/supervisor/dashboard.php'
                 : 'Location: pages/maintenance/home.php');
             exit;
         } else {
-            $error = '1';
+            $loginError = 'Invalid username or password, or account not yet active.';
         }
     } else {
-        $error = '2';
+        $loginError = 'Please fill in all fields.';
     }
 }
+ 
+// ──────────────────────────────────────────
+//  REGISTER — saves to registration_requests table
+//  Admin must approve before they can login
+// ──────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'register') {
+    $fullName = trim($_POST['full_name'] ?? '');
+    $username = trim($_POST['reg_username'] ?? '');
+    $password = $_POST['reg_password'] ?? '';
+    $confirm  = $_POST['reg_confirm'] ?? '';
+    $role     = $_POST['reg_role'] ?? 'staff';
+ 
+    if (!$fullName || !$username || !$password || !$confirm) {
+        $regError = 'Please fill in all fields.';
+    } elseif (strlen($password) < 6) {
+        $regError = 'Password must be at least 6 characters.';
+    } elseif ($password !== $confirm) {
+        $regError = 'Passwords do not match.';
+    } else {
+        $pdo = getDB();
+ 
+        // Check if username already taken in users table
+        $check = $pdo->prepare("SELECT id FROM users WHERE username = ? LIMIT 1");
+        $check->execute([$username]);
+ 
+        // Check if already has a pending request
+        $checkReq = $pdo->prepare("SELECT id FROM registration_requests WHERE username = ? AND status = 'pending' LIMIT 1");
+        $checkReq->execute([$username]);
+ 
+        if ($check->fetch()) {
+            $regError = 'Username already exists. Please choose another.';
+        } elseif ($checkReq->fetch()) {
+            $regError = 'A registration request with this username is already pending.';
+        } else {
+            $hashed = password_hash($password, PASSWORD_DEFAULT);
+            $dbRole = ($role === 'supervisor') ? 'supervisor' : 'staff';
+            $stmt   = $pdo->prepare("INSERT INTO registration_requests (full_name, username, password, role) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$fullName, $username, $hashed, $dbRole]);
+            $regSuccess = 'Account request submitted! Please wait for administrator approval before logging in.';
+        }
+    }
+}
+ 
+// ──────────────────────────────────────────
+//  FORGOT PASSWORD — saves to password_reset_requests
+// ──────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'forgot') {
+    $username = trim($_POST['forgot_username'] ?? '');
+ 
+    if (!$username) {
+        $forgotError = 'Please enter your username.';
+    } else {
+        $pdo  = getDB();
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? AND status = 'active' LIMIT 1");
+        $stmt->execute([$username]);
+        $user = $stmt->fetch();
+ 
+        if ($user) {
+            $existing = $pdo->prepare("SELECT id FROM password_reset_requests WHERE user_id = ? AND status = 'pending' LIMIT 1");
+            $existing->execute([$user['id']]);
+            if ($existing->fetch()) {
+                $forgotSuccess = 'You already have a pending reset request. Please wait for admin to process it.';
+            } else {
+                $ins = $pdo->prepare("INSERT INTO password_reset_requests (user_id) VALUES (?)");
+                $ins->execute([$user['id']]);
+                $forgotSuccess = 'Reset request sent! Your administrator will contact you shortly.';
+            }
+        } else {
+            // Don't reveal whether the username exists (security)
+            $forgotSuccess = 'If that username exists, a reset request has been sent to the administrator.';
+        }
+    }
+}
+ 
+// Which view panel to show on page load after a POST
+$activeView = 'view-login';
+if ($regError || $regSuccess)       $activeView = 'view-register';
+if ($forgotError || $forgotSuccess) $activeView = 'view-forgot';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -62,40 +153,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       --shadow:    rgba(197,0,0,0.18);
     }
     html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--cream); }
-
-    /* VIEW SYSTEM */
     .view { display: none; }
     .view.active { display: block; }
-
-    /* SPLIT LAYOUT */
     .page { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
-
-    /* LEFT */
+ 
     .left {
       position: relative; background: var(--red-deep);
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       padding: 3rem; overflow: hidden;
     }
-    .left::before {
-      content: ''; position: absolute; top: -120px; right: -120px;
-      width: 380px; height: 380px; border-radius: 50%;
-      background: rgba(255,255,255,0.05);
-    }
-    .left::after {
-      content: ''; position: absolute; bottom: -80px; left: -80px;
-      width: 280px; height: 280px; border-radius: 50%;
-      background: rgba(231,0,0,0.4);
-    }
+    .left::before { content: ''; position: absolute; top: -120px; right: -120px; width: 380px; height: 380px; border-radius: 50%; background: rgba(255,255,255,0.05); }
+    .left::after  { content: ''; position: absolute; bottom: -80px; left: -80px; width: 280px; height: 280px; border-radius: 50%; background: rgba(231,0,0,0.4); }
     .left-inner { position: relative; z-index: 1; text-align: center; animation: fadeUp 0.9s ease both; }
-
-    .seal-ring {
-      width: 110px; height: 110px; border-radius: 50%;
-      border: 3px solid rgba(255,255,255,0.4);
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 1.4rem; background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(4px);
-    }
+    .seal-ring { width: 110px; height: 110px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.4rem; background: rgba(255,255,255,0.08); backdrop-filter: blur(4px); }
     .seal-ring svg { width: 68px; height: 68px; fill: none; }
     .batstateu-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255,255,255,0.65); margin-bottom: 0.35rem; }
     .univ-name { font-family: 'Playfair Display', serif; font-size: 1.35rem; font-weight: 700; color: var(--white); line-height: 1.25; margin-bottom: 0.25rem; }
@@ -108,107 +179,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .sw-tagline { font-size: 0.75rem; color: rgba(255,255,255,0.6); font-weight: 300; line-height: 1.6; max-width: 280px; margin: 0 auto; }
     .features { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-top: 2rem; }
     .feat-pill { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 99px; padding: 0.3rem 0.85rem; font-size: 0.65rem; color: rgba(255,255,255,0.8); font-weight: 500; }
-
-    /* RIGHT */
-    .right {
-      background: var(--cream); display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 3rem 3.5rem; position: relative; overflow-y: auto;
-    }
-    .right::before {
-      content: ''; position: absolute; inset: 0;
-      background-image: linear-gradient(rgba(197,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(197,0,0,0.04) 1px, transparent 1px);
-      background-size: 32px 32px; pointer-events: none;
-    }
-
-    /* CARD */
+ 
+    .right { background: var(--cream); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 3.5rem; position: relative; overflow-y: auto; }
+    .right::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(197,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(197,0,0,0.04) 1px, transparent 1px); background-size: 32px 32px; pointer-events: none; }
+ 
     .card { position: relative; width: 100%; max-width: 400px; animation: fadeUp 0.9s 0.15s ease both; }
     .card-heading { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.4rem; }
     .card-sub { font-size: 0.82rem; color: var(--text-mid); margin-bottom: 2rem; }
-
-    /* ROLE TABS */
+ 
     .role-tabs { display: flex; background: var(--light); border-radius: 10px; padding: 4px; margin-bottom: 1.8rem; gap: 4px; }
     .role-tab { flex: 1; padding: 0.5rem; border: none; border-radius: 7px; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: #888; cursor: pointer; transition: all 0.22s; }
     .role-tab.active { background: var(--white); color: var(--red-deep); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-
-    /* FIELDS */
+ 
     .field { margin-bottom: 1.1rem; }
     label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-mid); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.45rem; }
     .input-wrap { position: relative; display: flex; align-items: center; }
     .input-icon { position: absolute; left: 14px; width: 17px; height: 17px; color: #bbb; pointer-events: none; transition: color 0.2s; }
     .input-wrap:focus-within .input-icon { color: var(--red-deep); }
-    input[type="text"], input[type="password"], input[type="email"] {
-      width: 100%; padding: 0.75rem 1rem 0.75rem 2.75rem;
-      border: 1.5px solid #e0d8c8; border-radius: 10px;
-      background: var(--white); font-family: 'DM Sans', sans-serif;
-      font-size: 0.88rem; color: var(--text-dark); outline: none;
-      transition: border-color 0.22s, box-shadow 0.22s;
-    }
+    input[type="text"], input[type="password"] { width: 100%; padding: 0.75rem 1rem 0.75rem 2.75rem; border: 1.5px solid #e0d8c8; border-radius: 10px; background: var(--white); font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--text-dark); outline: none; transition: border-color 0.22s, box-shadow 0.22s; }
     input:focus { border-color: var(--red-deep); box-shadow: 0 0 0 3px rgba(197,0,0,0.1); }
-    select.field-select {
-      width: 100%; padding: 0.75rem 1rem 0.75rem 2.75rem;
-      border: 1.5px solid #e0d8c8; border-radius: 10px;
-      background: var(--white); font-family: 'DM Sans', sans-serif;
-      font-size: 0.88rem; color: var(--text-dark); outline: none;
-      appearance: none; transition: border-color 0.22s, box-shadow 0.22s;
-    }
+    select.field-select { width: 100%; padding: 0.75rem 1rem 0.75rem 2.75rem; border: 1.5px solid #e0d8c8; border-radius: 10px; background: var(--white); font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--text-dark); outline: none; appearance: none; transition: border-color 0.22s, box-shadow 0.22s; }
     select.field-select:focus { border-color: var(--red-deep); box-shadow: 0 0 0 3px rgba(197,0,0,0.1); }
     .pw-toggle { position: absolute; right: 13px; background: none; border: none; cursor: pointer; color: #bbb; display: flex; align-items: center; padding: 0; transition: color 0.2s; }
     .pw-toggle:hover { color: var(--red-deep); }
     .pw-toggle svg { width: 17px; height: 17px; }
-
-    /* FORM FOOTER ROW */
+ 
     .form-footer-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     .remember { display: flex; align-items: center; gap: 0.45rem; font-size: 0.78rem; color: var(--text-mid); cursor: pointer; }
     .remember input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--red-deep); }
     .link-btn { font-size: 0.78rem; color: var(--red-deep); background: none; border: none; cursor: pointer; font-weight: 500; transition: opacity 0.2s; }
     .link-btn:hover { opacity: 0.7; }
-
-    /* BUTTONS */
-    .btn-primary {
-      width: 100%; padding: 0.85rem; background: var(--red-deep); color: var(--white);
-      border: none; border-radius: 10px; font-family: 'Playfair Display', serif;
-      font-size: 1rem; font-weight: 700; letter-spacing: 0.03em; cursor: pointer;
-      position: relative; overflow: hidden;
-      transition: background 0.22s, transform 0.15s, box-shadow 0.22s;
-      box-shadow: 0 4px 18px var(--shadow);
-    }
+ 
+    .btn-primary { width: 100%; padding: 0.85rem; background: var(--red-deep); color: var(--white); border: none; border-radius: 10px; font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; position: relative; overflow: hidden; transition: background 0.22s, transform 0.15s, box-shadow 0.22s; box-shadow: 0 4px 18px var(--shadow); }
     .btn-primary::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%); pointer-events: none; }
     .btn-primary:hover { background: var(--red-vivid); transform: translateY(-1px); box-shadow: 0 8px 24px var(--shadow); }
     .btn-primary:active { transform: translateY(0); }
-    .btn-ghost {
-      width: 100%; padding: 0.75rem; background: transparent; color: var(--text-mid);
-      border: 1.5px solid #e0d8c8; border-radius: 10px;
-      font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500;
-      cursor: pointer; margin-top: 0.6rem; transition: border-color 0.2s, color 0.2s;
-    }
+    .btn-ghost { width: 100%; padding: 0.75rem; background: transparent; color: var(--text-mid); border: 1.5px solid #e0d8c8; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; cursor: pointer; margin-top: 0.6rem; transition: border-color 0.2s, color 0.2s; }
     .btn-ghost:hover { border-color: var(--red-deep); color: var(--red-deep); }
-
-    /* MESSAGES */
+ 
     .msg-box { display: none; border-radius: 8px; padding: 0.65rem 0.9rem; font-size: 0.78rem; font-weight: 500; margin-bottom: 1rem; align-items: center; gap: 0.5rem; }
     .msg-box.show { display: flex; }
     .msg-box svg { width: 15px; height: 15px; flex-shrink: 0; }
     .msg-error   { background: #fff0f0; border: 1.5px solid #f5bcbc; color: var(--red-deep); }
     .msg-success { background: #f0fff4; border: 1.5px solid #86efac; color: #166534; }
-
-    /* OR DIVIDER */
+ 
     .or-divider { display: flex; align-items: center; gap: 0.75rem; margin: 1.2rem 0; font-size: 0.72rem; color: #bbb; }
     .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: #e0d8c8; }
-
-    /* NOTES */
+ 
     .login-note { margin-top: 1.5rem; text-align: center; font-size: 0.7rem; color: #aaa; line-height: 1.7; }
     .login-note span { color: var(--red-deep); font-weight: 600; }
-
-    /* SDG STRIP */
+ 
     .sdg-strip { position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.4rem; }
     .sdg-badge { font-size: 0.58rem; font-weight: 700; padding: 0.22rem 0.5rem; border-radius: 4px; letter-spacing: 0.04em; }
     .sdg-3  { background:#4C9F38; color:#fff; }
     .sdg-6  { background:#26BDE2; color:#fff; }
     .sdg-9  { background:#FD6925; color:#fff; }
     .sdg-11 { background:#FD9D24; color:#fff; }
-
+ 
     @keyframes fadeUp { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:translateY(0); } }
-
     @media (max-width: 780px) {
       .page { grid-template-columns: 1fr; }
       .left { display: none; }
@@ -219,7 +247,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 <div class="page">
-
+ 
   <!-- ══ LEFT ══ -->
   <div class="left">
     <div class="left-inner">
@@ -260,28 +288,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
     </div>
   </div>
-
+ 
   <!-- ══ RIGHT ══ -->
   <div class="right">
-
-    <!-- ─── VIEW: LOGIN ─── -->
-    <div class="card view active" id="view-login">
+ 
+    <!-- ─── LOGIN ─── -->
+    <div class="card view <?= $activeView === 'view-login' ? 'active' : '' ?>" id="view-login">
       <h2 class="card-heading">Welcome back</h2>
       <p class="card-sub">Sign in to your SmartWash account to continue.</p>
-
       <div class="role-tabs">
         <button class="role-tab active" id="tab-supervisor" onclick="setRole('supervisor')">Supervisor</button>
         <button class="role-tab" id="tab-maintenance" onclick="setRole('maintenance')">Maintenance</button>
       </div>
-
-      <div class="msg-box msg-error" id="loginError">
+      <div class="msg-box msg-error <?= $loginError ? 'show' : '' ?>" id="loginError">
         <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-        <span id="loginErrorText">Invalid username or password.</span>
+        <span id="loginErrorText"><?= htmlspecialchars($loginError) ?></span>
       </div>
-
-      <form method="POST" action="" onsubmit="return validateLogin()" novalidate>
+      <form method="POST" action="" novalidate>
+        <input type="hidden" name="action" value="login">
         <input type="hidden" name="role" id="roleInput" value="supervisor">
-
         <div class="field">
           <label for="username">Username</label>
           <div class="input-wrap">
@@ -289,7 +314,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="text" id="username" name="username" placeholder="Enter your username" autocomplete="username">
           </div>
         </div>
-
         <div class="field">
           <label for="password">Password</label>
           <div class="input-wrap">
@@ -300,134 +324,109 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </button>
           </div>
         </div>
-
         <div class="form-footer-row">
-          <label class="remember">
-            <input type="checkbox" name="remember" style="width:15px;height:15px;">
-            Remember me
-          </label>
+          <label class="remember"><input type="checkbox" name="remember" style="width:15px;height:15px;"> Remember me</label>
           <button type="button" class="link-btn" onclick="showView('view-forgot')">Forgot password?</button>
         </div>
-
         <button type="submit" class="btn-primary">Sign In to SmartWash</button>
       </form>
-
       <div class="or-divider">or</div>
       <button class="btn-ghost" onclick="showView('view-register')">Create a new account</button>
-
-      <p class="login-note">
-        Access is restricted to authorized BatStateU personnel only.<br>
-        Contact your administrator if you need an account.<br><br>
-        <span>SmartWash</span> © 2025 · BatStateU ARASOF-Nasugbu
-      </p>
+      <p class="login-note">Access is restricted to authorized BatStateU personnel only.<br><span>SmartWash</span> © 2025 · BatStateU ARASOF-Nasugbu</p>
     </div>
-
-    <!-- ─── VIEW: REGISTER ─── -->
-    <div class="card view" id="view-register">
+ 
+    <!-- ─── REGISTER ─── -->
+    <div class="card view <?= $activeView === 'view-register' ? 'active' : '' ?>" id="view-register">
       <h2 class="card-heading">Create account</h2>
-      <p class="card-sub">Register a new SmartWash account. Your account will need administrator approval before you can sign in.</p>
-
+      <p class="card-sub">Submit a request. Admin must approve before you can sign in.</p>
       <div class="role-tabs">
         <button class="role-tab active" id="reg-tab-supervisor" onclick="setRegRole('supervisor')">Supervisor</button>
         <button class="role-tab" id="reg-tab-maintenance" onclick="setRegRole('maintenance')">Maintenance</button>
       </div>
-
-      <div class="msg-box msg-error" id="regError">
+      <div class="msg-box msg-error <?= $regError ? 'show' : '' ?>">
         <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-        <span id="regErrorText">Please fill in all fields.</span>
+        <span><?= htmlspecialchars($regError) ?></span>
       </div>
-      <div class="msg-box msg-success" id="regSuccess">
+      <div class="msg-box msg-success <?= $regSuccess ? 'show' : '' ?>">
         <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-        <span>Account request submitted! Please wait for administrator approval.</span>
+        <span><?= htmlspecialchars($regSuccess) ?></span>
       </div>
-
-      <form onsubmit="submitRegister(event)" novalidate>
-        <input type="hidden" id="regRoleInput" value="supervisor">
-
+      <form method="POST" action="" novalidate>
+        <input type="hidden" name="action" value="register">
+        <input type="hidden" name="reg_role" id="regRoleInput" value="supervisor">
         <div class="field">
           <label>Full Name</label>
           <div class="input-wrap">
             <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
-            <input type="text" id="regFullName" placeholder="Your full name">
+            <input type="text" name="full_name" placeholder="Your full name" value="<?= htmlspecialchars($_POST['full_name'] ?? '') ?>">
           </div>
         </div>
-
         <div class="field">
           <label>Username</label>
           <div class="input-wrap">
             <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
-            <input type="text" id="regUsername" placeholder="Choose a username">
+            <input type="text" name="reg_username" placeholder="Choose a username" value="<?= htmlspecialchars($_POST['reg_username'] ?? '') ?>">
           </div>
         </div>
-
         <div class="field">
           <label>Password</label>
           <div class="input-wrap">
             <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
-            <input type="password" id="regPassword" placeholder="Create a password (min. 6 chars)">
+            <input type="password" id="regPassword" name="reg_password" placeholder="Min. 6 characters">
             <button type="button" class="pw-toggle" onclick="togglePw('regPassword','eyeReg')">
               <svg id="eyeReg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
             </button>
           </div>
         </div>
-
         <div class="field" style="margin-bottom:1.5rem">
           <label>Confirm Password</label>
           <div class="input-wrap">
             <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
-            <input type="password" id="regConfirm" placeholder="Repeat your password">
+            <input type="password" name="reg_confirm" placeholder="Repeat your password">
           </div>
         </div>
-
         <button type="submit" class="btn-primary">Submit Registration</button>
         <button type="button" class="btn-ghost" onclick="showView('view-login')">← Back to Sign In</button>
       </form>
     </div>
-
-    <!-- ─── VIEW: FORGOT PASSWORD ─── -->
-    <div class="card view" id="view-forgot">
+ 
+    <!-- ─── FORGOT PASSWORD ─── -->
+    <div class="card view <?= $activeView === 'view-forgot' ? 'active' : '' ?>" id="view-forgot">
       <h2 class="card-heading">Reset password</h2>
-      <p class="card-sub">Enter your username and role. Your reset request will be sent to the system administrator.</p>
-
-      <div class="msg-box msg-error" id="forgotError">
+      <p class="card-sub">Enter your username. Your reset request will be sent to the system administrator.</p>
+      <div class="msg-box msg-error <?= $forgotError ? 'show' : '' ?>">
         <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-        <span id="forgotErrorText">Please enter your username.</span>
+        <span><?= htmlspecialchars($forgotError) ?></span>
       </div>
-      <div class="msg-box msg-success" id="forgotSuccess">
+      <div class="msg-box msg-success <?= $forgotSuccess ? 'show' : '' ?>">
         <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-        <span>Reset request sent! Your administrator will contact you shortly.</span>
+        <span><?= htmlspecialchars($forgotSuccess) ?></span>
       </div>
-
-      <form onsubmit="submitForgot(event)" novalidate>
+      <form method="POST" action="" novalidate>
+        <input type="hidden" name="action" value="forgot">
         <div class="field">
           <label>Username</label>
           <div class="input-wrap">
             <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
-            <input type="text" id="forgotUsername" placeholder="Enter your username">
+            <input type="text" name="forgot_username" placeholder="Enter your username">
           </div>
         </div>
-
         <div class="field" style="margin-bottom:1.5rem">
           <label>Account Role</label>
           <div class="input-wrap">
             <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
-            <select id="forgotRole" class="field-select">
+            <select name="forgot_role" class="field-select">
               <option value="supervisor">Supervisor</option>
               <option value="maintenance">Maintenance</option>
             </select>
           </div>
         </div>
-
         <button type="submit" class="btn-primary">Send Reset Request</button>
         <button type="button" class="btn-ghost" onclick="showView('view-login')">← Back to Sign In</button>
       </form>
-
-      <p class="login-note" style="margin-top:1.2rem">
-        Password resets require admin approval.<br>
-        For urgent help: <span>admin@batstateu-arasof.edu.ph</span>
-      </p>
+      <p class="login-note" style="margin-top:1.2rem">Password resets require admin approval.<br>For urgent help: <span>admin@batstateu-arasof.edu.ph</span></p>
     </div>
-
+ 
     <div class="sdg-strip">
       <span class="sdg-badge sdg-3">SDG 3</span>
       <span class="sdg-badge sdg-6">SDG 6</span>
@@ -436,80 +435,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
   </div>
 </div>
-
+ 
 <script>
   function showView(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(id).classList.add('active');
   }
-
   function setRole(role) {
     document.querySelectorAll('#view-login .role-tab').forEach(t => t.classList.remove('active'));
     document.getElementById('tab-' + role).classList.add('active');
     document.getElementById('roleInput').value = role;
   }
-
   function setRegRole(role) {
     document.querySelectorAll('#view-register .role-tab').forEach(t => t.classList.remove('active'));
     document.getElementById('reg-tab-' + role).classList.add('active');
     document.getElementById('regRoleInput').value = role;
   }
-
   const eyeOpen  = '<path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>';
   const eyeClose = '<path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/><path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/>';
-
   function togglePw(fieldId, iconId) {
     const pw = document.getElementById(fieldId);
     const ic = document.getElementById(iconId);
     if (pw.type === 'password') { pw.type = 'text'; ic.innerHTML = eyeClose; }
     else { pw.type = 'password'; ic.innerHTML = eyeOpen; }
   }
-
-  function showErr(boxId, textId, msg) {
-    const b = document.getElementById(boxId);
-    if (textId) document.getElementById(textId).textContent = msg;
-    b.classList.add('show');
-  }
-  function hideMsg(boxId) { document.getElementById(boxId).classList.remove('show'); }
-
-  function validateLogin() {
-    const u = document.getElementById('username').value.trim();
-    const p = document.getElementById('password').value;
-    if (!u || !p) { showErr('loginError','loginErrorText','Please enter your username and password.'); return false; }
-    return true;
-  }
-
-  function submitRegister(e) {
-    e.preventDefault();
-    hideMsg('regError'); hideMsg('regSuccess');
-    const full = document.getElementById('regFullName').value.trim();
-    const user = document.getElementById('regUsername').value.trim();
-    const pw   = document.getElementById('regPassword').value;
-    const conf = document.getElementById('regConfirm').value;
-    if (!full || !user || !pw || !conf) { showErr('regError','regErrorText','Please fill in all fields.'); return; }
-    if (pw.length < 6) { showErr('regError','regErrorText','Password must be at least 6 characters.'); return; }
-    if (pw !== conf)   { showErr('regError','regErrorText','Passwords do not match.'); return; }
-    showErr('regSuccess', null, '');
-    setTimeout(() => showView('view-login'), 3000);
-  }
-
-  function submitForgot(e) {
-    e.preventDefault();
-    hideMsg('forgotError'); hideMsg('forgotSuccess');
-    const u = document.getElementById('forgotUsername').value.trim();
-    if (!u) { showErr('forgotError','forgotErrorText','Please enter your username.'); return; }
-    showErr('forgotSuccess', null, '');
-  }
-
-  <?php if ($error === '1'): ?>
-  showErr('loginError','loginErrorText','Invalid username or password. Please try again.');
-  <?php elseif ($error === '2'): ?>
-  showErr('loginError','loginErrorText','Please fill in all fields.');
-  <?php endif; ?>
-
   ['username','password'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('input', () => hideMsg('loginError'));
+    if (el) el.addEventListener('input', () => document.getElementById('loginError').classList.remove('show'));
   });
 </script>
 </body>
