@@ -27,9 +27,8 @@ function requireLogin(): void {
 function requireRole(array $roles): void {
     requireLogin();
     if (!in_array($_SESSION['role'] ?? '', $roles)) {
-        // Logged in but wrong role — redirect to their correct dashboard
         $role = $_SESSION['role'] ?? '';
-        if (in_array($role, ['supervisor', 'admin'])) {
+        if ($role === 'supervisor') {
             header('Location: ' . getRootPath() . 'pages/supervisor/dashboard.php');
         } else {
             header('Location: ' . getRootPath() . 'pages/maintenance/home.php');
