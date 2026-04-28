@@ -3,12 +3,12 @@
 //  SmartWash - Submit Checklist (Maintenance)
 //  File: api/submit_checklist.php
 //  Method: POST
+//  Flow: Inserts checklist + maintenance_log + notifications to supervisors
 // ============================================================
 
 require_once '../config/db.php';
 session_start();
 
-// Set header for JSON response
 header('Content-Type: application/json');
 
 // Check if user is logged in
@@ -37,9 +37,6 @@ if (!$input) {
     exit;
 }
 
-// Debug: Log received data
-error_log("Checklist submission received: " . print_r($input, true));
-
 // Required fields
 if (!isset($input['restroom_id']) || !isset($input['user_id'])) {
     echo json_encode(['success' => false, 'error' => 'Missing required fields: restroom_id and user_id']);
@@ -55,20 +52,26 @@ if ($input['user_id'] != $_SESSION['user_id']) {
 try {
     $pdo = getDB();
     
-    // Insert checklist
+    // Calculate rating score (0-5 based on completed tasks)
+    $total_items = 7;
+    $completed = 0;
+    if ($input['floor_clean'] ?? 0) $completed++;
+    if ($input['toilets_clean'] ?? 0) $completed++;
+    if ($input['sinks_clean'] ?? 0) $completed++;
+    if ($input['mirrors_clean'] ?? 0) $completed++;
+    if ($input['soap_refilled'] ?? 0) $completed++;
+    if ($input['trash_emptied'] ?? 0) $completed++;
+    if ($input['odor_free'] ?? 0) $completed++;
+    
+    $rating_score = round(($completed / $total_items) * 5, 1);
+    
+    // ============================================
+    // 1. INSERT INTO cleanliness_checklists
+    // ============================================
     $stmt = $pdo->prepare("
         INSERT INTO cleanliness_checklists (
-            restroom_id, 
-            submitted_by, 
-            floor_clean, 
-            toilets_clean, 
-            sinks_clean,
-            soap_refilled, 
-            trash_emptied, 
-            mirrors_clean, 
-            odor_free, 
-            notes, 
-            status
+            restroom_id, submitted_by, floor_clean, toilets_clean, sinks_clean,
+            soap_refilled, trash_emptied, mirrors_clean, odor_free, notes, status
         ) VALUES (
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending'
         )
@@ -89,50 +92,54 @@ try {
     
     $checklist_id = $pdo->lastInsertId();
     
-    // Also add to maintenance_logs
-    $stmt2 = $pdo->prepare("
+    // Get restroom name
+    $stmt_restroom = $pdo->prepare("SELECT name FROM restrooms WHERE id = ?");
+    $stmt_restroom->execute([$input['restroom_id']]);
+    $restroom = $stmt_restroom->fetch();
+    $restroom_name = $restroom ? $restroom['name'] : 'Restroom #' . $input['restroom_id'];
+    
+    // Get staff name
+    $stmt_staff = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
+    $stmt_staff->execute([$input['user_id']]);
+    $staff = $stmt_staff->fetch();
+    $staff_name = $staff ? $staff['full_name'] : $_SESSION['full_name'] ?? 'Maintenance Staff';
+    
+    // ============================================
+    // 2. INSERT INTO maintenance_logs
+    // ============================================
+    $stmt_log = $pdo->prepare("
         INSERT INTO maintenance_logs (restroom_id, user_id, action, notes)
         VALUES (?, ?, 'submitted_checklist', ?)
     ");
-    $stmt2->execute([
-        $input['restroom_id'],
-        $input['user_id'],
-        "Checklist submitted for review (ID: $checklist_id)"
-    ]);
+    $log_notes = "Submitted checklist for {$restroom_name} | Score: {$rating_score}/5";
+    $stmt_log->execute([$input['restroom_id'], $input['user_id'], $log_notes]);
     
-    // Get restroom name for notification
-    $stmt3 = $pdo->prepare("SELECT name FROM restrooms WHERE id = ?");
-    $stmt3->execute([$input['restroom_id']]);
-    $restroom = $stmt3->fetch();
-    
-    // Get user full name for notification
-    $stmt4 = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
-    $stmt4->execute([$_SESSION['user_id']]);
-    $user = $stmt4->fetch();
-    
-    // Notify all supervisors about new checklist
-    $stmt5 = $pdo->prepare("
+    // ============================================
+    // 3. INSERT INTO notifications (for all supervisors)
+    // ============================================
+    $stmt_supervisors = $pdo->prepare("
         SELECT id FROM users WHERE role = 'supervisor' AND status = 'active'
     ");
-    $stmt5->execute();
-    $supervisors = $stmt5->fetchAll();
+    $stmt_supervisors->execute();
+    $supervisors = $stmt_supervisors->fetchAll();
     
-    $restroom_name = $restroom ? $restroom['name'] : 'Restroom #' . $input['restroom_id'];
-    $staff_name = $user ? $user['full_name'] : $_SESSION['full_name'] ?? 'Staff';
+    $notification_title = '📋 New Checklist Submitted';
+    $notification_message = "{$staff_name} submitted a checklist for {$restroom_name} (Rating: {$rating_score}/5)";
+    
+    $stmt_notify = $pdo->prepare("
+        INSERT INTO notifications (user_id, title, message, type, is_read)
+        VALUES (?, ?, ?, 'checklist_submitted', 0)
+    ");
     
     foreach ($supervisors as $supervisor) {
-        $stmt6 = $pdo->prepare("
-            INSERT INTO notifications (user_id, title, message, type, is_read)
-            VALUES (?, 'New Checklist Submitted', ?, 'checklist_submitted', 0)
-        ");
-        $message = "New checklist submitted for {$restroom_name} by {$staff_name}";
-        $stmt6->execute([$supervisor['id'], $message]);
+        $stmt_notify->execute([$supervisor['id'], $notification_title, $notification_message]);
     }
     
     echo json_encode([
         'success' => true,
         'data' => [
             'checklist_id' => $checklist_id,
+            'rating_score' => $rating_score,
             'message' => 'Checklist submitted successfully! Waiting for supervisor approval.'
         ]
     ]);
