@@ -111,6 +111,25 @@ $current_page = basename($_SERVER['PHP_SELF']);
         .user-name { font-weight: 700; font-size: 0.88rem; }
         .user-role { font-size: 0.7rem; opacity: 0.6; }
         
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 1rem;
+            border: 1px solid var(--gray-border);
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px var(--shadow); }
+        .stat-value { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; color: var(--red-deep); }
+        .stat-label { font-size: 0.7rem; color: var(--text-mid); opacity: 0.7; }
+        
         /* Filter Bar */
         .filter-bar {
             display: flex;
@@ -187,6 +206,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
             margin-left: 0.5rem;
         }
         
+        .supervisor-rating {
+            margin-top: 0.3rem;
+            font-size: 0.7rem;
+            color: var(--green-success);
+        }
+        
         .score-badge {
             padding: 0.2rem 0.6rem;
             border-radius: 20px;
@@ -259,19 +284,28 @@ $current_page = basename($_SERVER['PHP_SELF']);
             opacity: 0.6;
         }
         
-        /* Demo Badge */
-        .demo-badge {
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-mid);
+        }
+        
+        .toast {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: var(--yellow-warning);
-            color: var(--text-dark);
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            color: white;
             z-index: 1000;
-            cursor: pointer;
+            animation: slideIn 0.3s ease;
+        }
+        .toast.success { background: var(--green-success); }
+        .toast.error { background: var(--red-deep); }
+        .toast.info { background: var(--blue-info); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
         
         /* Responsive */
@@ -333,177 +367,213 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </div>
         </div>
 
+        <!-- Stats Cards -->
+        <div class="stats-grid" id="statsContainer">
+            <div class="stat-card"><div class="stat-value" id="totalCount">-</div><div class="stat-label">Total</div></div>
+            <div class="stat-card"><div class="stat-value" id="pendingCount">-</div><div class="stat-label">Pending</div></div>
+            <div class="stat-card"><div class="stat-value" id="approvedCount">-</div><div class="stat-label">Approved</div></div>
+            <div class="stat-card"><div class="stat-value" id="flaggedCount">-</div><div class="stat-label">Flagged</div></div>
+        </div>
+
         <!-- Filter Bar -->
         <div class="filter-bar">
-            <button class="filter-btn active" onclick="filterChecklists('all')">All Submissions</button>
-            <button class="filter-btn" onclick="filterChecklists('pending')">Pending Review</button>
-            <button class="filter-btn" onclick="filterChecklists('approved')">Approved</button>
-            <button class="filter-btn" onclick="filterChecklists('flagged')">Flagged</button>
+            <button class="filter-btn active" data-filter="all">All Submissions</button>
+            <button class="filter-btn" data-filter="pending">Pending Review</button>
+            <button class="filter-btn" data-filter="approved">Approved</button>
+            <button class="filter-btn" data-filter="flagged">Flagged</button>
         </div>
 
         <!-- Checklists Card -->
         <div class="card">
-            <div id="checklistsList"></div>
+            <div id="checklistsList">
+                <div class="loading">Loading checklists...</div>
+            </div>
         </div>
     </main>
 </div>
 
-<!-- Demo Badge -->
-<div class="demo-badge" onclick="toggleDemoMode()" title="Click to toggle between Demo and Live mode">
-    🧪 DEMO MODE | Checklist Review System
-</div>
-
 <script>
-// Checklist Data
-let checklists = [
-    {
-        id: 1,
-        restroom: 'GLR1 - Ground Left',
-        staff: 'Rey M. Santos',
-        date: '2026-04-28',
-        time: '09:30 AM',
-        score: 5,
-        scoreText: 'Excellent',
-        scoreClass: 'excellent',
-        status: 'pending',
-        details: {
-            toilet: 'Excellent',
-            floor: 'Good',
-            sink: 'Excellent',
-            mirror: 'Good',
-            soap: 'Full',
-            towel: 'Full'
-        }
-    },
-    {
-        id: 2,
-        restroom: 'GLR2 - Ground Right',
-        staff: 'Maria L. Cruz',
-        date: '2026-04-28',
-        time: '10:15 AM',
-        score: 3,
-        scoreText: 'Fair',
-        scoreClass: 'fair',
-        status: 'pending',
-        details: {
-            toilet: 'Good',
-            floor: 'Fair',
-            sink: 'Good',
-            mirror: 'Fair',
-            soap: 'Low',
-            towel: 'Half Full'
-        }
-    },
-    {
-        id: 3,
-        restroom: '1F-FR - 1st Floor Front',
-        staff: 'Rey M. Santos',
-        date: '2026-04-27',
-        time: '02:00 PM',
-        score: 4,
-        scoreText: 'Good',
-        scoreClass: 'good',
-        status: 'approved',
-        details: {
-            toilet: 'Excellent',
-            floor: 'Good',
-            sink: 'Good',
-            mirror: 'Good',
-            soap: 'Full',
-            towel: 'Full'
-        }
-    },
-    {
-        id: 4,
-        restroom: '1F-RR - 1st Floor Rear',
-        staff: 'John D. Reyes',
-        date: '2026-04-27',
-        time: '11:20 AM',
-        score: 2,
-        scoreText: 'Poor',
-        scoreClass: 'poor',
-        status: 'flagged',
-        details: {
-            toilet: 'Poor',
-            floor: 'Poor',
-            sink: 'Fair',
-            mirror: 'Poor',
-            soap: 'Empty',
-            towel: 'Empty'
-        }
-    },
-    {
-        id: 5,
-        restroom: '2F-MR - 2nd Floor Main',
-        staff: 'Maria L. Cruz',
-        date: '2026-04-28',
-        time: '08:45 AM',
-        score: 5,
-        scoreText: 'Excellent',
-        scoreClass: 'excellent',
-        status: 'pending',
-        details: {
-            toilet: 'Excellent',
-            floor: 'Excellent',
-            sink: 'Excellent',
-            mirror: 'Excellent',
-            soap: 'Full',
-            towel: 'Full'
-        }
-    }
-];
-
+// Configuration
 let currentFilter = 'all';
+let currentChecklists = [];
 
-function displayChecklists() {
+// Helper function to show toast notifications
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// Load checklists from API
+async function loadChecklists() {
     const container = document.getElementById('checklistsList');
-    let filteredChecklists = checklists;
+    container.innerHTML = '<div class="loading">Loading checklists...</div>';
     
-    if (currentFilter === 'pending') {
-        filteredChecklists = checklists.filter(c => c.status === 'pending');
-    } else if (currentFilter === 'approved') {
-        filteredChecklists = checklists.filter(c => c.status === 'approved');
-    } else if (currentFilter === 'flagged') {
-        filteredChecklists = checklists.filter(c => c.status === 'flagged');
+    try {
+        const status = currentFilter === 'all' ? 'all' : currentFilter;
+        const response = await fetch(`../../api/get_checklists.php?status=${status}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            currentChecklists = result.data;
+            displayChecklists(currentChecklists);
+            updateStats(currentChecklists);
+        } else {
+            container.innerHTML = '<div class="empty-state">No checklists found</div>';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        container.innerHTML = '<div class="empty-state">Error loading checklists. Please refresh the page.</div>';
     }
+}
+
+// Display checklists
+function displayChecklists(checklists) {
+    const container = document.getElementById('checklistsList');
     
-    if (filteredChecklists.length === 0) {
+    if (!checklists || checklists.length === 0) {
         container.innerHTML = '<div class="empty-state">📋 No checklists found for this filter.</div>';
         return;
     }
     
-    container.innerHTML = filteredChecklists.map(checklist => `
-        <div class="checklist-item" data-id="${checklist.id}">
-            <div class="checklist-info">
-                <div class="checklist-restroom">${escapeHtml(checklist.restroom)}</div>
-                <div class="checklist-staff">👤 ${escapeHtml(checklist.staff)}</div>
-                <div class="checklist-date">📅 ${checklist.date} at ${checklist.time}</div>
-            </div>
-            <div style="text-align: center; min-width: 100px;">
-                <div class="rating-stars">
-                    ${getStarRating(checklist.score)}
-                    <span class="rating-value">${checklist.score}/5</span>
+    container.innerHTML = checklists.map(checklist => {
+        const starRating = Math.floor(checklist.rating);
+        const supervisorRating = checklist.supervisor_rating;
+        
+        return `
+            <div class="checklist-item" data-id="${checklist.id}">
+                <div class="checklist-info">
+                    <div class="checklist-restroom">${escapeHtml(checklist.restroom_name)}</div>
+                    <div class="checklist-staff">👤 ${escapeHtml(checklist.staff_name)}</div>
+                    <div class="checklist-date">📅 ${formatDate(checklist.submitted_at)}</div>
                 </div>
-                <span class="score-badge score-${checklist.scoreClass}">${checklist.scoreText}</span>
-                <div style="margin-top: 0.3rem;">
-                    <span class="status-badge status-${checklist.status}">
-                        ${checklist.status === 'pending' ? '⏳ Pending' : checklist.status === 'approved' ? '✓ Approved' : '⚠️ Flagged'}
-                    </span>
+                <div style="text-align: center; min-width: 140px;">
+                    <div class="rating-stars">
+                        ${getStarRating(starRating)}
+                        <span class="rating-value">${checklist.rating}/5</span>
+                    </div>
+                    ${supervisorRating ? `
+                        <div class="supervisor-rating">
+                            ⭐ Supervisor: ${'★'.repeat(supervisorRating)}${'☆'.repeat(5-supervisorRating)}
+                        </div>
+                    ` : ''}
+                    <div style="margin-top: 0.3rem;">
+                        <span class="status-badge status-${checklist.status}">
+                            ${checklist.status === 'pending' ? '⏳ Pending' : checklist.status === 'approved' ? '✓ Approved' : '⚠️ Flagged'}
+                        </span>
+                    </div>
+                </div>
+                <div class="checklist-actions">
+                    <button class="btn-view" onclick="viewDetails(${checklist.id})">View Details</button>
+                    ${checklist.status === 'pending' ? `
+                        <button class="btn-approve" onclick="reviewChecklist(${checklist.id}, 'approve')">✓ Approve & Rate</button>
+                        <button class="btn-flag" onclick="reviewChecklist(${checklist.id}, 'flag')">⚠️ Flag</button>
+                    ` : checklist.status === 'flagged' ? `
+                        <button class="btn-approve" onclick="reviewChecklist(${checklist.id}, 'approve')">✓ Approve & Rate</button>
+                    ` : ''}
                 </div>
             </div>
-            <div class="checklist-actions">
-                <button class="btn-view" onclick="viewDetails(${checklist.id})">View Details</button>
-                ${checklist.status === 'pending' ? `
-                    <button class="btn-approve" onclick="approveChecklist(${checklist.id})">✓ Approve</button>
-                    <button class="btn-flag" onclick="flagChecklist(${checklist.id})">⚠️ Flag</button>
-                ` : checklist.status === 'flagged' ? `
-                    <button class="btn-approve" onclick="approveChecklist(${checklist.id})">✓ Approve</button>
-                ` : ''}
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
+// View details of a checklist
+async function viewDetails(id) {
+    try {
+        const response = await fetch(`../../api/get_checklist_details.php?id=${id}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const c = result.data;
+            const supervisorRatingDisplay = c.supervisor_rating 
+                ? `\n⭐ Supervisor Rating: ${c.supervisor_rating}/5 ${'★'.repeat(c.supervisor_rating)}${'☆'.repeat(5-c.supervisor_rating)}`
+                : '';
+            const reviewNotesDisplay = c.review_notes ? `\n\n📝 Supervisor Feedback: ${c.review_notes}` : '';
+            
+            alert(`📋 CHECKLIST DETAILS\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                  `📍 Restroom: ${c.restroom_name}\n` +
+                  `👤 Staff: ${c.staff_name}\n` +
+                  `📅 Date: ${formatDate(c.submitted_at)}\n` +
+                  `📊 Status: ${c.status.toUpperCase()}\n` +
+                  `⭐ Auto Rating: ${c.rating}/5 (based on completed tasks)${supervisorRatingDisplay}\n\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `📝 TASKS COMPLETED:\n` +
+                  `  ${c.floor_clean ? '✅' : '❌'} Floor Clean\n` +
+                  `  ${c.toilets_clean ? '✅' : '❌'} Toilets Clean\n` +
+                  `  ${c.sinks_clean ? '✅' : '❌'} Sinks Clean\n` +
+                  `  ${c.mirrors_clean ? '✅' : '❌'} Mirrors Clean\n` +
+                  `  ${c.soap_refilled ? '✅' : '❌'} Soap Refilled\n` +
+                  `  ${c.trash_emptied ? '✅' : '❌'} Trash Emptied\n` +
+                  `  ${c.odor_free ? '✅' : '❌'} Odor Free\n` +
+                  `${c.notes ? `\n📝 Staff Notes: ${c.notes}` : ''}${reviewNotesDisplay}`);
+        } else {
+            showToast('Could not load checklist details', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error loading details', 'error');
+    }
+}
+
+// Review checklist (approve or flag)
+async function reviewChecklist(id, action) {
+    let reviewNotes = null;
+    let rating = null;
+    
+    if (action === 'flag') {
+        reviewNotes = prompt('Please provide a reason for flagging this checklist:');
+        if (reviewNotes === null) return;
+        if (!reviewNotes.trim()) {
+            showToast('Please provide a reason for flagging.', 'error');
+            return;
+        }
+    } else {
+        rating = prompt('Rate this work (1-5 stars):\n\n1 = Poor\n2 = Fair\n3 = Good\n4 = Very Good\n5 = Excellent', '5');
+        if (rating === null) return;
+        
+        rating = parseInt(rating);
+        if (isNaN(rating) || rating < 1 || rating > 5) {
+            showToast('Please enter a valid rating between 1 and 5.', 'error');
+            return;
+        }
+        
+        reviewNotes = prompt('Optional feedback notes for the staff (or click OK to skip):');
+        if (reviewNotes === null) reviewNotes = '';
+    }
+    
+    try {
+        const response = await fetch('../../api/review_checklist.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                checklist_id: id,
+                action: action,
+                rating: action === 'approve' ? rating : null,
+                review_notes: reviewNotes
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            let message = result.data.message;
+            if (action === 'approve' && rating) {
+                message += `\n\nRating given: ${rating}/5 ${'★'.repeat(rating)}${'☆'.repeat(5-rating)}`;
+            }
+            showToast(message, 'success');
+            loadChecklists(); // Refresh the list
+        } else {
+            showToast('Error: ' + (result.error || 'Failed to review checklist'), 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Failed to review checklist. Please try again.', 'error');
+    }
+}
+
+// Get star rating HTML
 function getStarRating(score) {
     let stars = '';
     for (let i = 1; i <= 5; i++) {
@@ -512,65 +582,34 @@ function getStarRating(score) {
     return stars;
 }
 
-function viewDetails(id) {
-    const checklist = checklists.find(c => c.id === id);
-    if (checklist) {
-        alert(`[DEMO] Checklist Details for ${checklist.restroom}\n\n` +
-              `Staff: ${checklist.staff}\n` +
-              `Date: ${checklist.date}\n` +
-              `Overall Score: ${checklist.score}/5 (${checklist.scoreText})\n\n` +
-              `Detailed Ratings:\n` +
-              `• Toilet: ${checklist.details.toilet}\n` +
-              `• Floor: ${checklist.details.floor}\n` +
-              `• Sink: ${checklist.details.sink}\n` +
-              `• Mirror: ${checklist.details.mirror}\n` +
-              `• Soap: ${checklist.details.soap}\n` +
-              `• Paper Towel: ${checklist.details.towel}\n\n` +
-              `In live mode, this would open a detailed view.`);
-    }
+// Update statistics
+function updateStats(checklists) {
+    const total = checklists.length;
+    const pending = checklists.filter(c => c.status === 'pending').length;
+    const approved = checklists.filter(c => c.status === 'approved').length;
+    const flagged = checklists.filter(c => c.status === 'flagged').length;
+    
+    document.getElementById('totalCount').textContent = total;
+    document.getElementById('pendingCount').textContent = pending;
+    document.getElementById('approvedCount').textContent = approved;
+    document.getElementById('flaggedCount').textContent = flagged;
 }
 
-function approveChecklist(id) {
-    if (confirm('Approve this checklist? The maintenance staff will be notified.')) {
-        const checklist = checklists.find(c => c.id === id);
-        if (checklist && checklist.status === 'pending') {
-            checklist.status = 'approved';
-            displayChecklists();
-            alert(`✓ Checklist for ${checklist.restroom} has been approved.`);
-        } else if (checklist && checklist.status === 'flagged') {
-            checklist.status = 'approved';
-            displayChecklists();
-            alert(`✓ Checklist for ${checklist.restroom} has been approved and the flag has been removed.`);
-        }
-    }
-}
-
-function flagChecklist(id) {
-    const reason = prompt('Please provide a reason for flagging this checklist:');
-    if (reason) {
-        const checklist = checklists.find(c => c.id === id);
-        if (checklist && checklist.status === 'pending') {
-            checklist.status = 'flagged';
-            displayChecklists();
-            alert(`⚠️ Checklist for ${checklist.restroom} has been flagged.\nReason: ${reason}\n\nThe maintenance staff will be notified.`);
-        }
-    }
-}
-
+// Filter checklists
 function filterChecklists(filter) {
     currentFilter = filter;
     
-    // Update active button
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('active');
-        if (btn.textContent.toLowerCase().includes(filter.toLowerCase())) {
+        if (btn.getAttribute('data-filter') === filter) {
             btn.classList.add('active');
         }
     });
     
-    displayChecklists();
+    loadChecklists();
 }
 
+// Helper functions
 function escapeHtml(str) {
     if (!str) return '';
     const div = document.createElement('div');
@@ -578,15 +617,26 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-function toggleDemoMode() {
-    if (confirm('Toggle between Demo and Live mode?\n\nCurrently in: DEMO MODE\n\nNote: Live mode would connect to:\n- api/get_checklists.php\n- api/review_checklist.php')) {
-        alert('Switching to live mode would fetch real checklist submissions from the database.');
-    }
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }
+
+// Add event listeners to filter buttons
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => filterChecklists(btn.getAttribute('data-filter')));
+});
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    displayChecklists();
+    loadChecklists();
 });
 </script>
 </body>
