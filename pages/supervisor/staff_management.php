@@ -27,8 +27,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Management — SmartWash | BatStateU ARASOF-Nasugbu</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -55,12 +53,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
             overflow-x: hidden;
         }
 
-        /* Layout */
-        .dashboard-wrapper {
-            display: flex;
-            min-height: 100vh;
-        }
-
+        .dashboard-wrapper { display: flex; min-height: 100vh; }
+        
         /* Sidebar */
         .sidebar {
             width: 280px;
@@ -71,61 +65,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
             overflow-y: auto;
             z-index: 100;
         }
-
-        .sidebar-header {
-            padding: 1.8rem 1.5rem;
-            border-bottom: 1px solid var(--gray-border);
-            text-align: center;
-        }
-
-        .sidebar-logo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.7rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .sidebar-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--red-deep);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .sidebar-icon svg {
-            width: 22px;
-            height: 22px;
-        }
-
-        .sidebar-icon svg path {
-            fill: var(--white);
-        }
-
-        .sidebar-logo span {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.4rem;
-            font-weight: 900;
-            color: var(--text-dark);
-        }
-
-        .sidebar-sub {
-            font-size: 0.7rem;
-            color: var(--text-mid);
-            opacity: 0.7;
-        }
-
-        .sidebar-nav {
-            padding: 1.5rem 1rem;
-        }
-
-        .nav-item {
-            margin-bottom: 0.3rem;
-        }
-
+        .sidebar-header { padding: 1.8rem 1.5rem; border-bottom: 1px solid var(--gray-border); text-align: center; }
+        .sidebar-logo { display: flex; align-items: center; justify-content: center; gap: 0.7rem; margin-bottom: 0.5rem; }
+        .sidebar-icon { width: 40px; height: 40px; background: var(--red-deep); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .sidebar-icon svg { width: 22px; height: 22px; }
+        .sidebar-icon svg path { fill: var(--white); }
+        .sidebar-logo span { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 900; color: var(--text-dark); }
+        .sidebar-sub { font-size: 0.7rem; color: var(--text-mid); opacity: 0.7; }
+        .sidebar-nav { padding: 1.5rem 1rem; }
+        .nav-item { margin-bottom: 0.3rem; }
         .nav-link {
             display: flex;
             align-items: center;
@@ -138,31 +86,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
             font-size: 0.88rem;
             transition: all 0.2s;
         }
-
-        .nav-link svg {
-            width: 20px;
-            height: 20px;
-            color: #aaa;
-            transition: all 0.2s;
-        }
-
-        .nav-link:hover {
-            background: rgba(197,0,0,0.05);
-            color: var(--red-deep);
-        }
-
-        .nav-link:hover svg {
-            color: var(--red-deep);
-        }
-
-        .nav-link.active {
-            background: var(--red-deep);
-            color: var(--white);
-        }
-
-        .nav-link.active svg {
-            color: var(--white);
-        }
+        .nav-link svg { width: 20px; height: 20px; color: #aaa; transition: all 0.2s; }
+        .nav-link:hover { background: rgba(197,0,0,0.05); color: var(--red-deep); }
+        .nav-link:hover svg { color: var(--red-deep); }
+        .nav-link.active { background: var(--red-deep); color: var(--white); }
+        .nav-link.active svg { color: var(--white); }
 
         /* Main Content */
         .main-content {
@@ -170,7 +98,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             margin-left: 280px;
             padding: 1.5rem 2rem;
         }
-
+        
         /* Top Bar */
         .top-bar {
             display: flex;
@@ -182,119 +110,35 @@ $current_page = basename($_SERVER['PHP_SELF']);
             border-radius: 16px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.03);
         }
-
-        .page-title h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--text-dark);
-        }
-
-        .page-title p {
-            font-size: 0.8rem;
-            color: var(--text-mid);
-            opacity: 0.7;
-        }
-
-        .top-bar-right {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .logout-btn {
-            background: none;
-            border: 1px solid var(--gray-border);
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            font-weight: 500;
-            color: var(--text-mid);
-            text-decoration: none;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .logout-btn:hover {
-            background: var(--red-deep);
-            border-color: var(--red-deep);
-            color: var(--white);
-        }
-
-        .logout-btn:hover svg {
-            stroke: var(--white);
-        }
-
-        .user-menu {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .user-avatar {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, var(--red-deep), var(--red-vivid));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-
-        .user-info {
-            text-align: right;
-        }
-
-        .user-name {
-            font-weight: 700;
-            font-size: 0.88rem;
-        }
-
-        .user-role {
-            font-size: 0.7rem;
-            opacity: 0.6;
-        }
+        .page-title h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 700; color: var(--text-dark); }
+        .page-title p { font-size: 0.8rem; color: var(--text-mid); opacity: 0.7; }
+        .top-bar-right { display: flex; align-items: center; gap: 1.5rem; }
+        .logout-btn { background: none; border: 1px solid var(--gray-border); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.75rem; font-weight: 500; color: var(--text-mid); transition: all 0.2s; text-decoration: none; }
+        .logout-btn:hover { background: var(--red-deep); border-color: var(--red-deep); color: var(--white); }
+        .user-menu { display: flex; align-items: center; gap: 1rem; }
+        .user-avatar { width: 44px; height: 44px; background: linear-gradient(135deg, var(--red-deep), var(--red-vivid)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--white); font-weight: 700; font-size: 1.1rem; }
+        .user-info { text-align: right; }
+        .user-name { font-weight: 700; font-size: 0.88rem; }
+        .user-role { font-size: 0.7rem; opacity: 0.6; }
 
         /* Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 1rem;
             margin-bottom: 1.5rem;
         }
-
         .stat-card {
             background: var(--white);
             border-radius: 16px;
-            padding: 1.2rem;
+            padding: 1rem;
             border: 1px solid var(--gray-border);
+            text-align: center;
             transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px var(--shadow);
-        }
-
-        .stat-value {
-            font-family: 'Playfair Display', serif;
-            font-size: 2rem;
-            font-weight: 900;
-            color: var(--red-deep);
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            color: var(--text-mid);
-            opacity: 0.7;
-        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px var(--shadow); }
+        .stat-value { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; color: var(--red-deep); }
+        .stat-label { font-size: 0.7rem; color: var(--text-mid); opacity: 0.7; }
 
         /* Tabs */
         .tabs {
@@ -303,7 +147,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
             margin-bottom: 1.5rem;
             border-bottom: 2px solid var(--gray-border);
         }
-
         .tab-btn {
             padding: 0.75rem 1.5rem;
             background: none;
@@ -315,7 +158,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
             transition: all 0.2s;
             position: relative;
         }
-
         .tab-btn::after {
             content: '';
             position: absolute;
@@ -327,29 +169,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
             transform: scaleX(0);
             transition: transform 0.2s;
         }
+        .tab-btn:hover { color: var(--red-deep); }
+        .tab-btn.active { color: var(--red-deep); }
+        .tab-btn.active::after { transform: scaleX(1); }
 
-        .tab-btn:hover {
-            color: var(--red-deep);
-        }
-
-        .tab-btn.active {
-            color: var(--red-deep);
-        }
-
-        .tab-btn.active::after {
-            transform: scaleX(1);
-        }
-
-        /* Tab Content */
-        .tab-content {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -363,30 +188,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
             overflow-x: auto;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid var(--gray-border);
-        }
-
-        th {
-            background: var(--light);
-            font-weight: 600;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-mid);
-        }
-
-        tr:hover {
-            background: rgba(197,0,0,0.02);
-        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--gray-border); }
+        th { background: var(--light); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-mid); }
+        tr:hover { background: rgba(197,0,0,0.02); }
 
         /* Badges */
         .badge {
@@ -396,41 +201,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
             font-size: 0.7rem;
             font-weight: 600;
         }
-
-        .badge-pending {
-            background: #fff3e0;
-            color: var(--orange-warning);
-        }
-
-        .badge-approved {
-            background: var(--green-soft);
-            color: var(--green-success);
-        }
-
-        .badge-rejected {
-            background: var(--red-soft);
-            color: var(--red-deep);
-        }
-
-        .badge-active {
-            background: var(--green-soft);
-            color: var(--green-success);
-        }
-
-        .badge-inactive {
-            background: var(--red-soft);
-            color: var(--red-deep);
-        }
-
-        .badge-supervisor {
-            background: rgba(21,101,192,0.15);
-            color: var(--blue-info);
-        }
-
-        .badge-maintenance {
-            background: rgba(46,125,50,0.15);
-            color: var(--green-success);
-        }
+        .badge-pending { background: #fff3e0; color: var(--orange-warning); }
+        .badge-active { background: var(--green-soft); color: var(--green-success); }
+        .badge-inactive { background: var(--red-soft); color: var(--red-deep); }
+        .badge-maintenance { background: rgba(46,125,50,0.15); color: var(--green-success); }
 
         /* Buttons */
         .btn-approve {
@@ -445,12 +219,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             margin-right: 0.3rem;
             transition: all 0.2s;
         }
-
-        .btn-approve:hover {
-            background: #1b5e20;
-            transform: translateY(-1px);
-        }
-
+        .btn-approve:hover { background: #1b5e20; transform: translateY(-1px); }
         .btn-reject {
             background: var(--red-deep);
             color: white;
@@ -462,12 +231,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             font-weight: 600;
             transition: all 0.2s;
         }
-
-        .btn-reject:hover {
-            background: #9b0000;
-            transform: translateY(-1px);
-        }
-
+        .btn-reject:hover { background: #9b0000; transform: translateY(-1px); }
         .btn-deactivate {
             background: var(--orange-warning);
             color: white;
@@ -479,72 +243,77 @@ $current_page = basename($_SERVER['PHP_SELF']);
             font-weight: 600;
             transition: all 0.2s;
         }
-
-        .btn-deactivate:hover {
-            background: #e65100;
-            transform: translateY(-1px);
+        .btn-deactivate:hover { background: #e65100; transform: translateY(-1px); }
+        .btn-assign {
+            background: var(--blue-info);
+            color: white;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 600;
+            transition: all 0.2s;
         }
+        .btn-assign:hover { background: #0d47a1; transform: translateY(-1px); }
 
-        /* Loading & Empty States */
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-mid);
+        .empty-state { text-align: center; padding: 3rem; color: var(--text-mid); opacity: 0.6; }
+        .loading { text-align: center; padding: 3rem; color: var(--text-mid); }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
         }
-
-        .empty-state {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-mid);
-            opacity: 0.6;
+        .modal.active { display: flex; }
+        .modal-content {
+            background: var(--white);
+            border-radius: 16px;
+            width: 500px;
+            max-width: 90%;
+            padding: 1.5rem;
         }
+        .modal-header { margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--gray-border); }
+        .modal-header h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; }
+        .modal-body { margin-bottom: 1rem; }
+        .modal-body p { font-size: 0.85rem; color: var(--text-mid); margin-bottom: 1rem; }
+        .restrooms-list { max-height: 300px; overflow-y: auto; border: 1px solid var(--gray-border); border-radius: 8px; padding: 0.5rem; }
+        .restroom-checkbox-item { display: block; padding: 0.5rem; margin-bottom: 0.25rem; cursor: pointer; border-radius: 6px; }
+        .restroom-checkbox-item:hover { background: var(--light); }
+        .restroom-checkbox-item input { margin-right: 0.5rem; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid var(--gray-border); }
+        .modal-btn { padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
+        .modal-btn-cancel { background: var(--light); border: 1px solid var(--gray-border); color: var(--text-mid); }
+        .modal-btn-confirm { background: var(--red-deep); color: var(--white); border: none; }
+        .modal-btn-confirm:hover { background: var(--red-vivid); }
 
-        /* Toast Notification */
+        /* Toast */
         .toast {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: var(--text-dark);
-            color: white;
             padding: 0.75rem 1.5rem;
             border-radius: 8px;
+            color: white;
             z-index: 1000;
             animation: slideIn 0.3s ease;
         }
-
-        .toast.success {
-            background: var(--green-success);
-        }
-
-        .toast.error {
-            background: var(--red-deep);
-        }
-
-        .toast.info {
-            background: var(--blue-info);
-        }
-
+        .toast.success { background: var(--green-success); }
+        .toast.error { background: var(--red-deep); }
+        .toast.info { background: var(--blue-info); }
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
 
-        /* Demo Badge */
-        .demo-badge {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--yellow-warning);
-            color: var(--text-dark);
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            z-index: 1000;
-            cursor: pointer;
-        }
-
-        /* Responsive */
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
             .main-content { margin-left: 0; }
@@ -552,16 +321,37 @@ $current_page = basename($_SERVER['PHP_SELF']);
             th, td { padding: 0.5rem; font-size: 0.75rem; }
             .tab-btn { padding: 0.5rem 1rem; font-size: 0.8rem; }
         }
+
+        /* Assigned Restrooms Tags */
+.assigned-restrooms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+.restroom-tag {
+    background: var(--light);
+    color: var(--text-mid);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    border: 1px solid var(--gray-border);
+}
+.no-assigned {
+    color: var(--text-mid);
+    opacity: 0.6;
+    font-size: 0.7rem;
+    font-style: italic;
+}
     </style>
 </head>
 <body>
 <div class="dashboard-wrapper">
-    <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-logo">
                 <div class="sidebar-icon">
-                    <svg viewBox="0 0 24 24" fill="none">
+                    <svg viewBox="0 0 24 24">
                         <path d="M12 2C12 2 6 9 6 14C6 17.3 8.7 20 12 20C15.3 20 18 17.3 18 14C18 9 12 2 12 2Z" fill="#C50000"/>
                         <path d="M9 13.5C9.5 12.5 10.7 12 12 12C13.3 12 14.5 12.5 15 13.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>
                         <path d="M10.5 16C11 15.4 11.5 15 12 15C12.5 15 13 15.4 13.5 16" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>
@@ -585,23 +375,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </nav>
     </aside>
 
-    <!-- Main Content -->
     <main class="main-content">
         <div class="top-bar">
             <div class="page-title">
                 <h1>Staff Management</h1>
-                <p>Approve or reject new account requests and manage existing staff, etc</p>
+                <p>Approve or reject new account requests and manage existing staff</p>
             </div>
             <div class="top-bar-right">
                 <form method="POST" action="../../auth/logout.php" style="margin:0;">
-                    <button type="submit" class="logout-btn">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                            <polyline points="16 17 21 12 16 7"></polyline>
-                            <line x1="21" y1="12" x2="9" y2="12"></line>
-                        </svg>
-                        Logout
-                    </button>
+                    <button type="submit" class="logout-btn">Logout</button>
                 </form>
                 <div class="user-menu">
                     <div class="user-info">
@@ -615,28 +397,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
         <!-- Stats Overview -->
         <div class="stats-grid" id="statsContainer">
-            <div class="stat-card">
-                <div class="stat-value" id="pendingCount">-</div>
-                <div class="stat-label">Pending Approvals</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="totalStaffCount">-</div>
-                <div class="stat-label">Total Staff</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="supervisorCount">-</div>
-                <div class="stat-label">Supervisors</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="maintenanceCount">-</div>
-                <div class="stat-label">Maintenance Staff</div>
-            </div>
+            <div class="stat-card"><div class="stat-value" id="pendingCount">-</div><div class="stat-label">Pending Approvals</div></div>
+            <div class="stat-card"><div class="stat-value" id="totalStaffCount">-</div><div class="stat-label">Total Staff</div></div>
+            <div class="stat-card"><div class="stat-value" id="maintenanceCount">-</div><div class="stat-label">Active Maintenance</div></div>
         </div>
 
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('pending', this)">Pending Approvals</button>
-            <button class="tab-btn" onclick="switchTab('approved', this)">Approved Staff</button>
+            <button class="tab-btn active" data-tab="pending">Pending Approvals</button>
+            <button class="tab-btn" data-tab="approved">Approved Staff</button>
         </div>
 
         <!-- Pending Approvals Tab -->
@@ -644,258 +413,314 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <div class="table-container">
                 <table>
                     <thead>
-                        <tr>
-                            <th>Full Name</th>
-                            <th>Username</th>
-                            <th>Role</th>
-                            <th>Requested Date</th>
-                            <th>Actions</th>
-                        </tr>
+                        <tr><th>Full Name</th><th>Username</th><th>Role</th><th>Requested Date</th><th>Actions</th></tr>
                     </thead>
-                    <tbody id="pendingTableBody">
-                        <tr><td colspan="5" class="loading">Loading pending requests...</td></tr>
-                    </tbody>
+                    <tbody id="pendingTableBody"><tr><td colspan="5" class="loading">Loading pending requests...</td></tr></tbody>
                 </table>
             </div>
         </div>
 
         <!-- Approved Staff Tab -->
-        <div id="approvedTab" class="tab-content">
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Full Name</th>
-                            <th>Username</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th>Joined Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="approvedTableBody">
-                        <tr><td colspan="6" class="loading">Loading staff list...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <!-- Approved Staff Tab -->
+<div id="approvedTab" class="tab-content">
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Username</th>
+                    <th>Status</th>
+                    <th>Joined Date</th>
+                    <th>Assigned Restrooms</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="approvedTableBody">
+                <tr><td colspan="6" class="loading">Loading staff list...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
     </main>
 </div>
 
-<div class="demo-badge" onclick="toggleDemoMode()">🧪 DEMO MODE | Staff Management (Demo Data)</div>
+<!-- Assign Restrooms Modal (for approving maintenance staff) -->
+<div id="assignRestroomsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3>Assign Restrooms to Staff</h3></div>
+        <div class="modal-body">
+            <p>Select the restrooms this maintenance staff will be responsible for:</p>
+            <div id="assignRestroomsList" class="restrooms-list"><div class="loading">Loading restrooms...</div></div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn modal-btn-cancel" onclick="closeAssignRestroomsModal()">Cancel</button>
+            <button class="modal-btn modal-btn-confirm" onclick="submitWithAssignments()">Approve & Assign</button>
+        </div>
+    </div>
+</div>
 
 <script>
 // =============================================
 // CONFIGURATION
 // =============================================
-const USE_DEMO_MODE = true;
 const API_BASE = '../../api/';
+let currentRequestId = null;
+let pendingRequestsData = [];
 
 // =============================================
-// DEMO DATA
+// TOAST NOTIFICATION
 // =============================================
-let pendingRequests = [
-    { id: 1, full_name: 'Juan D. Santos', username: 'juansantos', role: 'maintenance', requested_at: '2026-04-28 09:30:00' },
-    { id: 2, full_name: 'Maria R. Reyes', username: 'mariareyes', role: 'maintenance', requested_at: '2026-04-28 08:15:00' },
-    { id: 3, full_name: 'Carlos M. Lopez', username: 'carloslopez', role: 'supervisor', requested_at: '2026-04-27 14:20:00' },
-    { id: 4, full_name: 'Ana P. Garcia', username: 'anagarcia', role: 'maintenance', requested_at: '2026-04-27 11:45:00' }
-];
-
-let approvedStaff = [
-    { id: 1, full_name: 'Rey M. Santos', username: 'reysantos', role: 'maintenance', status: 'active', created_at: '2026-04-15 10:00:00' },
-    { id: 2, full_name: 'Maria L. Cruz', username: 'mariacruz', role: 'maintenance', status: 'active', created_at: '2026-04-14 09:30:00' },
-    { id: 3, full_name: 'John D. Reyes', username: 'johnreyes', role: 'maintenance', status: 'active', created_at: '2026-04-13 14:15:00' },
-    { id: 4, full_name: 'Admin User', username: 'admin', role: 'supervisor', status: 'active', created_at: '2026-04-01 08:00:00' }
-];
-
-// =============================================
-// INITIALIZATION
-// =============================================
-document.addEventListener('DOMContentLoaded', () => {
-    loadPendingRequests();
-    loadApprovedStaff();
-});
-
-function loadPendingRequests() {
-    if (USE_DEMO_MODE) {
-        displayPendingRequests(pendingRequests);
-        updateStats();
-    } else {
-        fetch(API_BASE + 'get_pending_registrations.php')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    displayPendingRequests(data.requests);
-                    updateStats(data.requests.length);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-    }
-}
-
-function loadApprovedStaff() {
-    if (USE_DEMO_MODE) {
-        displayApprovedStaff(approvedStaff);
-    } else {
-        fetch(API_BASE + 'get_approved_staff.php')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    displayApprovedStaff(data.staff);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-    }
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
 }
 
 // =============================================
-// DISPLAY FUNCTIONS
+// LOAD PENDING REQUESTS
 // =============================================
-
-function displayPendingRequests(requests) {
+async function loadPendingRequests() {
     const tbody = document.getElementById('pendingTableBody');
+    tbody.innerHTML = '<tr><td colspan="5" class="loading">Loading pending requests...</td></tr>';
     
-    if (!requests || requests.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No pending registration requests</td></tr>';
-        return;
+    try {
+        const response = await fetch(API_BASE + 'get_pending_registrations.php');
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.length > 0) {
+            pendingRequestsData = result.data;
+            tbody.innerHTML = result.data.map(req => `
+                <tr>
+                    <td><strong>${escapeHtml(req.full_name)}</strong></td>
+                    <td>${escapeHtml(req.username)}</td>
+                    <td><span class="badge badge-maintenance">${escapeHtml(req.role)}</span></td>
+                    <td>${formatDate(req.requested_at)}</td>
+                    <td>
+                        <button class="btn-approve" onclick="processRequest(${req.id}, 'approve', '${req.role}')">✓ Approve</button>
+                        <button class="btn-reject" onclick="processRequest(${req.id}, 'reject', '${req.role}')">✗ Reject</button>
+                    </td>
+                </tr>
+            `).join('');
+            document.getElementById('pendingCount').textContent = result.data.length;
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No pending registration requests</td></tr>';
+            document.getElementById('pendingCount').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Error loading data</td></tr>';
     }
-    
-    tbody.innerHTML = requests.map(req => `
-        <tr>
-            <td><strong>${escapeHtml(req.full_name)}</strong></td>
-            <td>${escapeHtml(req.username)}</td>
-            <td><span class="badge ${req.role === 'supervisor' ? 'badge-supervisor' : 'badge-maintenance'}">${escapeHtml(req.role)}</span></td>
-            <td>${formatDate(req.requested_at)}</td>
-            <td>
-                <button class="btn-approve" onclick="approveUser(${req.id})">✓ Approve</button>
-                <button class="btn-reject" onclick="rejectUser(${req.id})">✗ Reject</button>
-            </td>
-        </tr>
-    `).join('');
 }
 
-function displayApprovedStaff(staff) {
+async function loadApprovedStaff() {
     const tbody = document.getElementById('approvedTableBody');
+    tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading staff list...</td></tr>';
     
-    if (!staff || staff.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No staff members found</td></tr>';
+    try {
+        const response = await fetch(API_BASE + 'get_approved_staff.php');
+        const result = await response.json();
+        
+        console.log('Approved staff response:', result);
+        
+        if (result.success && result.data && result.data.length > 0) {
+            const activeCount = result.data.filter(s => s.status === 'active').length;
+            
+            document.getElementById('totalStaffCount').textContent = result.data.length;
+            document.getElementById('maintenanceCount').textContent = activeCount;
+            
+            tbody.innerHTML = result.data.map(member => `
+                <tr>
+                    <td><strong>${escapeHtml(member.full_name)}</strong></td>
+                    <td>${escapeHtml(member.username)}</td>
+                    <td><span class="badge ${member.status === 'active' ? 'badge-active' : 'badge-inactive'}">${escapeHtml(member.status)}</span></td>
+                    <td>${member.joined_date || formatDate(member.created_at)}</td>
+                    <td>
+                        ${member.assigned_restrooms ? 
+                            `<div class="assigned-restrooms">
+                                ${member.assigned_restrooms.split(',').map(r => `<span class="restroom-tag">${escapeHtml(r.trim())}</span>`).join('')}
+                             </div>` : 
+                            '<span class="no-assigned">No restrooms assigned</span>'}
+                    </td>
+                    <td>
+                        ${member.status === 'active' ? `<button class="btn-assign" onclick="openAssignModal(${member.id})">📋 Assign</button>` : ''}
+                        ${member.status === 'active' ? `<button class="btn-deactivate" onclick="deactivateUser(${member.id})">⛔ Deactivate</button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No maintenance staff found</td></tr>';
+            document.getElementById('totalStaffCount').textContent = '0';
+            document.getElementById('maintenanceCount').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error loading staff:', error);
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Error loading data</td></tr>';
+    }
+}
+
+// =============================================
+// PROCESS APPROVE/REJECT
+// =============================================
+function processRequest(requestId, action, role) {
+    if (action === 'approve' && role === 'maintenance') {
+        currentRequestId = requestId;
+        loadRestroomsForAssignment();
+        document.getElementById('assignRestroomsModal').classList.add('active');
+    } else {
+        confirmAction(requestId, action, []);
+    }
+}
+
+async function confirmAction(requestId, action, assignedRestrooms) {
+    if (!confirm(`Are you sure you want to ${action} this registration request?`)) return;
+    
+    try {
+        const response = await fetch(API_BASE + 'approve_user.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request_id: requestId, action: action, assigned_restrooms: assignedRestrooms })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(result.message, 'success');
+            loadPendingRequests();
+            loadApprovedStaff();
+            closeAssignRestroomsModal();
+        } else {
+            showToast(result.error, 'error');
+        }
+    } catch (error) {
+        showToast('Error processing request', 'error');
+    }
+}
+
+async function loadRestroomsForAssignment() {
+    try {
+        const response = await fetch(API_BASE + 'get_restrooms_for_assign.php');
+        const result = await response.json();
+        
+        if (result.success && result.data.length > 0) {
+            const container = document.getElementById('assignRestroomsList');
+            container.innerHTML = result.data.map(r => `
+                <label class="restroom-checkbox-item">
+                    <input type="checkbox" value="${r.id}" class="restroom-checkbox">
+                    <strong>${escapeHtml(r.name)}</strong><br>
+                    <span style="font-size: 0.75rem; color: var(--text-mid); margin-left: 1.5rem;">📍 ${escapeHtml(r.location)} | ${escapeHtml(r.gender)}</span>
+                </label>
+            `).join('');
+        } else {
+            document.getElementById('assignRestroomsList').innerHTML = '<div class="empty-state">No restrooms available</div>';
+        }
+    } catch (error) {
+        console.error('Error loading restrooms:', error);
+        document.getElementById('assignRestroomsList').innerHTML = '<div class="empty-state">Error loading restrooms</div>';
+    }
+}
+
+function submitWithAssignments() {
+    const checkboxes = document.querySelectorAll('#assignRestroomsList input:checked');
+    const assignedRestrooms = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    if (assignedRestrooms.length === 0) {
+        if (!confirm('No restrooms selected. Continue without assignment?')) return;
+    }
+    confirmAction(currentRequestId, 'approve', assignedRestrooms);
+}
+
+function closeAssignRestroomsModal() {
+    document.getElementById('assignRestroomsModal').classList.remove('active');
+    currentRequestId = null;
+}
+
+// =============================================
+// ASSIGN RESTROOM TO EXISTING STAFF
+// =============================================
+let currentAssignUserId = null;
+
+function openAssignModal(userId) {
+    currentAssignUserId = userId;
+    loadRestroomsForExistingStaff();
+    document.getElementById('assignModal').classList.add('active');
+}
+
+async function loadRestroomsForExistingStaff() {
+    try {
+        const response = await fetch(API_BASE + 'get_restrooms_for_assign.php');
+        const result = await response.json();
+        
+        if (result.success && result.data.length > 0) {
+            const select = document.getElementById('assignRestroomSelect');
+            select.innerHTML = '<option value="">-- Select Restroom --</option>' + 
+                result.data.map(r => `<option value="${r.id}">${escapeHtml(r.name)} (${escapeHtml(r.location)})</option>`).join('');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+function closeAssignModal() {
+    document.getElementById('assignModal').classList.remove('active');
+    currentAssignUserId = null;
+}
+
+async function confirmAssign() {
+    const restroomId = document.getElementById('assignRestroomSelect').value;
+    if (!restroomId) {
+        showToast('Please select a restroom', 'error');
         return;
     }
     
-    tbody.innerHTML = staff.map(member => `
-        <tr>
-            <td><strong>${escapeHtml(member.full_name)}</strong></td>
-            <td>${escapeHtml(member.username)}</td>
-            <td><span class="badge ${member.role === 'supervisor' ? 'badge-supervisor' : 'badge-maintenance'}">${escapeHtml(member.role)}</span></td>
-            <td><span class="badge ${member.status === 'active' ? 'badge-active' : 'badge-inactive'}">${escapeHtml(member.status)}</span></td>
-            <td>${formatDate(member.created_at)}</td>
-            <td>
-                ${member.role !== 'supervisor' ? `<button class="btn-deactivate" onclick="deactivateUser(${member.id})">Deactivate</button>` : '<span class="badge badge-info">Admin</span>'}
-            </td>
-        </tr>
-    `).join('');
-}
-
-// =============================================
-// ACTION FUNCTIONS
-// =============================================
-
-function approveUser(requestId) {
-    if (!confirm('Approve this user? They will be able to log in immediately.')) return;
-    
-    if (USE_DEMO_MODE) {
-        const request = pendingRequests.find(r => r.id === requestId);
-        if (request) {
-            // Add to approved staff
-            const newStaff = {
-                id: approvedStaff.length + 1,
-                full_name: request.full_name,
-                username: request.username,
-                role: request.role,
-                status: 'active',
-                created_at: new Date().toISOString()
-            };
-            approvedStaff.push(newStaff);
-            
-            // Remove from pending
-            pendingRequests = pendingRequests.filter(r => r.id !== requestId);
-            
-            // Refresh displays
-            displayPendingRequests(pendingRequests);
-            displayApprovedStaff(approvedStaff);
-            updateStats();
-            
-            showToast(`✓ ${request.full_name} has been approved!`, 'success');
+    try {
+        const response = await fetch(API_BASE + 'assign_restroom.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: currentAssignUserId, restroom_id: restroomId })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(result.message, 'success');
+            closeAssignModal();
+            loadApprovedStaff(); // Refresh to show updated assignments
+        } else {
+            showToast(result.error, 'error');
         }
-    } else {
-        // API call would go here
-        showToast('Approval functionality will connect to API', 'info');
+    } catch (error) {
+        showToast('Error assigning restroom', 'error');
     }
 }
 
-function rejectUser(requestId) {
-    if (!confirm('Reject this registration request? The user will be notified.')) return;
-    
-    if (USE_DEMO_MODE) {
-        const request = pendingRequests.find(r => r.id === requestId);
-        if (request) {
-            pendingRequests = pendingRequests.filter(r => r.id !== requestId);
-            displayPendingRequests(pendingRequests);
-            updateStats();
-            showToast(`✗ Registration request for ${request.full_name} has been rejected.`, 'error');
-        }
-    } else {
-        showToast('Rejection functionality will connect to API', 'info');
-    }
-}
-
-function deactivateUser(userId) {
+// =============================================
+// DEACTIVATE USER
+// =============================================
+async function deactivateUser(userId) {
     if (!confirm('Deactivate this user? They will no longer be able to log in.')) return;
     
-    if (USE_DEMO_MODE) {
-        const user = approvedStaff.find(s => s.id === userId);
-        if (user) {
-            user.status = 'inactive';
-            displayApprovedStaff(approvedStaff);
-            updateStats();
-            showToast(`⚠️ ${user.full_name} has been deactivated.`, 'info');
+    try {
+        const response = await fetch(API_BASE + 'deactivate_user.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(result.message, 'success');
+            loadApprovedStaff();
+        } else {
+            showToast(result.error, 'error');
         }
-    } else {
-        showToast('Deactivation functionality will connect to API', 'info');
+    } catch (error) {
+        showToast('Error deactivating user', 'error');
     }
 }
 
 // =============================================
 // HELPER FUNCTIONS
 // =============================================
-
-function updateStats() {
-    if (USE_DEMO_MODE) {
-        document.getElementById('pendingCount').textContent = pendingRequests.length;
-        document.getElementById('totalStaffCount').textContent = approvedStaff.length;
-        document.getElementById('supervisorCount').textContent = approvedStaff.filter(s => s.role === 'supervisor').length;
-        document.getElementById('maintenanceCount').textContent = approvedStaff.filter(s => s.role === 'maintenance' && s.status === 'active').length;
-    }
-}
-
-function switchTab(tab, element) {
-    // Update tab buttons
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    element.classList.add('active');
-    
-    // Update tab contents
-    document.getElementById('pendingTab').classList.remove('active');
-    document.getElementById('approvedTab').classList.remove('active');
-    
-    if (tab === 'pending') {
-        document.getElementById('pendingTab').classList.add('active');
-        loadPendingRequests();
-    } else {
-        document.getElementById('approvedTab').classList.add('active');
-        loadApprovedStaff();
-    }
-}
-
 function escapeHtml(str) {
     if (!str) return '';
     const div = document.createElement('div');
@@ -906,29 +731,56 @@ function escapeHtml(str) {
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric'
-    });
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
+// =============================================
+// TAB SWITCHING
+// =============================================
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
     
-    setTimeout(() => {
-        toast.remove();
-    }, 3000);
-}
-
-function toggleDemoMode() {
-    if (confirm('Toggle between Demo and Live mode?\n\nCurrently in: DEMO MODE\n\nNote: Live mode would connect to:\n- api/get_pending_registrations.php\n- api/get_approved_staff.php\n- api/approve_user.php')) {
-        alert('Switching to live mode would fetch real staff data from the database.');
+    document.getElementById('pendingTab').classList.remove('active');
+    document.getElementById('approvedTab').classList.remove('active');
+    
+    if (tabId === 'pending') {
+        document.getElementById('pendingTab').classList.add('active');
+        loadPendingRequests();
+    } else {
+        document.getElementById('approvedTab').classList.add('active');
+        loadApprovedStaff();
     }
 }
+
+// =============================================
+// INITIALIZATION
+// =============================================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadPendingRequests();
+    loadApprovedStaff();
+});
 </script>
+
+<!-- Assign Modal for Existing Staff -->
+<div id="assignModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3>Assign Restroom to Staff</h3></div>
+        <div class="modal-body">
+            <p>Select a restroom to assign to this staff member:</p>
+            <select id="assignRestroomSelect" style="width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--gray-border);">
+                <option value="">Loading...</option>
+            </select>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn modal-btn-cancel" onclick="closeAssignModal()">Cancel</button>
+            <button class="modal-btn modal-btn-confirm" onclick="confirmAssign()">Assign</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
