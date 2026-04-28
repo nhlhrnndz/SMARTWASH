@@ -8,6 +8,18 @@ require_once '../../auth/session.php';
 requireRole(['supervisor']);
 
 $currentUser = currentUser();
+$fullName = $currentUser['full_name'] ?? 'Supervisor';
+$initials = '';
+$nameParts = explode(' ', $fullName);
+foreach ($nameParts as $part) {
+    if (strlen($part) > 0 && strlen($initials) < 2) {
+        $initials .= strtoupper($part[0]);
+    }
+}
+if (strlen($initials) < 2 && strlen($fullName) > 0) {
+    $initials = strtoupper(substr($fullName, 0, 2));
+}
+$current_page = basename($_SERVER['PHP_SELF']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -33,14 +45,18 @@ $currentUser = currentUser();
             --yellow-warning: #f9a825;
             --orange-critical: #f57c00;
             --gray-border: #e0d8c8;
+            --blue-info: #1565C0;
         }
         body {
             font-family: 'DM Sans', sans-serif;
             background: var(--cream);
             color: var(--text-dark);
+            overflow-x: hidden;
         }
 
         .dashboard-wrapper { display: flex; min-height: 100vh; }
+        
+        /* Sidebar */
         .sidebar {
             width: 280px;
             background: var(--white);
@@ -98,16 +114,20 @@ $currentUser = currentUser();
             font-size: 0.88rem;
             transition: all 0.2s;
         }
-        .nav-link svg { width: 20px; height: 20px; color: #aaa; }
+        .nav-link svg { width: 20px; height: 20px; color: #aaa; transition: all 0.2s; }
         .nav-link:hover { background: rgba(197,0,0,0.05); color: var(--red-deep); }
+        .nav-link:hover svg { color: var(--red-deep); }
         .nav-link.active { background: var(--red-deep); color: var(--white); }
         .nav-link.active svg { color: var(--white); }
 
+        /* Main Content */
         .main-content {
             flex: 1;
             margin-left: 280px;
             padding: 1.5rem 2rem;
         }
+        
+        /* Top Bar */
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -116,6 +136,7 @@ $currentUser = currentUser();
             background: var(--white);
             padding: 1rem 1.5rem;
             border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
         }
         .page-title h1 {
             font-family: 'Playfair Display', serif;
@@ -128,6 +149,34 @@ $currentUser = currentUser();
             color: var(--text-mid);
             opacity: 0.7;
         }
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .logout-btn {
+            background: none;
+            border: 1px solid var(--gray-border);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-mid);
+            text-decoration: none;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .logout-btn:hover {
+            background: var(--red-deep);
+            border-color: var(--red-deep);
+            color: var(--white);
+        }
+        .logout-btn:hover svg {
+            stroke: var(--white);
+        }
         .user-menu { display: flex; align-items: center; gap: 1rem; }
         .user-avatar {
             width: 44px;
@@ -139,10 +188,52 @@ $currentUser = currentUser();
             justify-content: center;
             color: var(--white);
             font-weight: 700;
+            font-size: 1.1rem;
         }
         .user-info { text-align: right; }
         .user-name { font-weight: 700; font-size: 0.88rem; }
         .user-role { font-size: 0.7rem; opacity: 0.6; }
+
+        /* Refresh Controls */
+        .refresh-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .auto-refresh-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+        }
+        .auto-refresh-toggle input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .refresh-btn {
+            background: var(--red-deep);
+            color: var(--white);
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .refresh-btn:hover {
+            background: var(--red-vivid);
+            transform: scale(1.02);
+        }
+        .last-updated {
+            font-size: 0.7rem;
+            color: var(--text-mid);
+            opacity: 0.6;
+        }
 
         /* Live Monitoring Specific Styles */
         .restroom-grid {
@@ -155,9 +246,12 @@ $currentUser = currentUser();
             border-radius: 16px;
             border: 1px solid var(--gray-border);
             overflow: hidden;
-            transition: transform 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .restroom-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px var(--shadow); }
+        .restroom-card:hover { 
+            transform: translateY(-4px); 
+            box-shadow: 0 8px 24px var(--shadow);
+        }
         .restroom-header {
             background: var(--light);
             padding: 1rem 1.2rem;
@@ -165,6 +259,8 @@ $currentUser = currentUser();
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
         .restroom-name {
             font-family: 'Playfair Display', serif;
@@ -174,12 +270,13 @@ $currentUser = currentUser();
         .status-badge {
             padding: 0.25rem 0.6rem;
             border-radius: 20px;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 600;
         }
         .status-good { background: var(--green-success); color: white; }
         .status-warning { background: var(--yellow-warning); color: var(--text-dark); }
         .status-critical { background: var(--red-deep); color: white; }
+        
         .restroom-body { padding: 1.2rem; }
         .sensor-row {
             display: flex;
@@ -188,16 +285,19 @@ $currentUser = currentUser();
             padding: 0.6rem 0;
             border-bottom: 1px solid var(--gray-border);
         }
+        .sensor-row:last-child { border-bottom: none; }
         .sensor-label { font-size: 0.75rem; font-weight: 600; color: var(--text-mid); }
         .sensor-value { font-size: 0.85rem; font-weight: 700; }
         .sensor-value.low { color: var(--orange-critical); }
         .sensor-value.warning { color: var(--yellow-warning); }
+        
         .progress-bar {
             background: var(--light);
             border-radius: 10px;
             height: 8px;
             overflow: hidden;
             margin-top: 0.3rem;
+            margin-bottom: 0.8rem;
         }
         .progress-fill {
             height: 100%;
@@ -207,14 +307,19 @@ $currentUser = currentUser();
         .fill-good { background: var(--green-success); }
         .fill-warning { background: var(--yellow-warning); }
         .fill-critical { background: var(--red-deep); }
-        .alert-icon { font-size: 1.2rem; }
-        .last-updated {
-            font-size: 0.65rem;
-            color: var(--text-mid);
-            text-align: right;
-            margin-top: 1rem;
-            opacity: 0.6;
+        
+        .alert-icon { 
+            font-size: 0.8rem; 
+            font-weight: 600;
+            color: var(--red-deep);
         }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-mid);
+        }
+        
         .demo-badge {
             position: fixed;
             bottom: 20px;
@@ -225,7 +330,15 @@ $currentUser = currentUser();
             border-radius: 20px;
             font-size: 0.7rem;
             font-weight: 600;
+            z-index: 1000;
             cursor: pointer;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
+            .main-content { margin-left: 0; }
+            .restroom-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -238,6 +351,7 @@ $currentUser = currentUser();
                     <svg viewBox="0 0 24 24" fill="none">
                         <path d="M12 2C12 2 6 9 6 14C6 17.3 8.7 20 12 20C15.3 20 18 17.3 18 14C18 9 12 2 12 2Z" fill="#C50000"/>
                         <path d="M9 13.5C9.5 12.5 10.7 12 12 12C13.3 12 14.5 12.5 15 13.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>
+                        <path d="M10.5 16C11 15.4 11.5 15 12 15C12.5 15 13 15.4 13.5 16" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>
                         <circle cx="12" cy="18" r="1" fill="#fff"/>
                     </svg>
                 </div>
@@ -246,15 +360,15 @@ $currentUser = currentUser();
             <div class="sidebar-sub">BatStateU ARASOF-Nasugbu</div>
         </div>
         <nav class="sidebar-nav">
-            <div class="nav-item"><a href="dashboard.php" class="nav-link">Dashboard</a></div>
-            <div class="nav-item"><a href="live_monitoring.php" class="nav-link active">Live Monitoring</a></div>
-            <div class="nav-item"><a href="vape_incidents.php" class="nav-link">Vape Incidents</a></div>
-            <div class="nav-item"><a href="air_quality.php" class="nav-link">Air Quality</a></div>
-            <div class="nav-item"><a href="checklists.php" class="nav-link">Checklists</a></div>
-            <div class="nav-item"><a href="maintenance_log.php" class="nav-link">Maintenance Log</a></div>
-            <div class="nav-item"><a href="alerts.php" class="nav-link">Alerts</a></div>
-            <div class="nav-item"><a href="staff_management.php" class="nav-link">Staff Management</a></div>
-            <div class="nav-item"><a href="settings.php" class="nav-link">Settings</a></div>
+            <div class="nav-item"><a href="dashboard.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>Dashboard</a></div>
+            <div class="nav-item"><a href="live_monitoring.php" class="nav-link active"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>Live Monitoring</a></div>
+            <div class="nav-item"><a href="vape_incidents.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v4a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Vape Incidents</a></div>
+            <div class="nav-item"><a href="air_quality.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4a1 1 0 011-1h8a1 1 0 011 1v1a1 1 0 01-1 1H6a1 1 0 01-1-1V4zM4 9a1 1 0 011-1h10a1 1 0 011 1v1a1 1 0 01-1 1H5a1 1 0 01-1-1V9zM6 14a1 1 0 100-2h8a1 1 0 100 2H6z" clip-rule="evenodd"/></svg>Air Quality</a></div>
+            <div class="nav-item"><a href="checklists.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h6a1 1 0 100-2H7zm0 4a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>Checklists</a></div>
+            <div class="nav-item"><a href="maintenance_log.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>Maintenance Log</a></div>
+            <div class="nav-item"><a href="alerts.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v4a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Alerts</a></div>
+            <div class="nav-item"><a href="staff_management.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>Staff Management</a></div>
+            <div class="nav-item"><a href="settings.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>Settings</a></div>
         </nav>
     </aside>
 
@@ -264,36 +378,67 @@ $currentUser = currentUser();
                 <h1>Live Monitoring</h1>
                 <p>Real-time sensor data from all restroom facilities</p>
             </div>
-            <div class="user-menu">
-                <div class="user-info">
-                    <div class="user-name"><?php echo htmlspecialchars($currentUser['full_name'] ?? 'Supervisor'); ?></div>
-                    <div class="user-role">Supervisor</div>
+            <div class="top-bar-right">
+                <form method="POST" action="../../auth/logout.php" style="margin:0;">
+                    <button type="submit" class="logout-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        Logout
+                    </button>
+                </form>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name"><?php echo htmlspecialchars($fullName); ?></div>
+                        <div class="user-role">Supervisor</div>
+                    </div>
+                    <div class="user-avatar"><?php echo htmlspecialchars($initials); ?></div>
                 </div>
-                <div class="user-avatar"><?php echo strtoupper(substr($currentUser['full_name'] ?? 'S', 0, 2)); ?></div>
+            </div>
+        </div>
+
+        <!-- Refresh Controls -->
+        <div class="refresh-bar">
+            <div class="auto-refresh-toggle">
+                <label>
+                    <input type="checkbox" id="autoRefreshToggle" checked> Auto-refresh (10s)
+                </label>
+            </div>
+            <div>
+                <button class="refresh-btn" onclick="manualRefresh()">⟳ Refresh Now</button>
             </div>
         </div>
 
         <div class="restroom-grid" id="restroomGrid">
-            <!-- Live data will load here -->
-            <div class="loading" style="text-align: center; padding: 3rem;">Loading restroom data...</div>
+            <div class="loading">Loading restroom data...</div>
         </div>
         <div class="last-updated" id="lastUpdated">Last updated: Just now</div>
     </main>
 </div>
 
-<div class="demo-badge">📡 LIVE MONITORING | UI Preview (Data will auto-refresh when sensors are connected)</div>
+<div class="demo-badge" onclick="toggleDemoMode()">🧪 DEMO MODE | Live sensor simulation active</div>
 
 <script>
-// Simulated restroom data for UI preview
-const restrooms = [
-    { id: 1, name: 'GLR1 - Ground Left', soap: 85, air: 32, vape: false, smoke: false, last_seen: 'Just now' },
-    { id: 2, name: 'GLR2 - Ground Right', soap: 45, air: 28, vape: true, smoke: false, last_seen: 'Just now' },
-    { id: 3, name: '1F-FR - 1st Floor Front', soap: 12, air: 55, vape: false, smoke: false, last_seen: '2 min ago' },
-    { id: 4, name: '1F-RR - 1st Floor Rear', soap: 92, air: 25, vape: false, smoke: false, last_seen: '1 min ago' },
-    { id: 5, name: '2F-MR - 2nd Floor Main', soap: 67, air: 85, vape: false, smoke: false, last_seen: 'Just now' },
-    { id: 6, name: '2F-LR - 2nd Floor Left', soap: 78, air: 42, vape: false, smoke: false, last_seen: '3 min ago' },
-    { id: 7, name: '3F-CR - 3rd Floor CR', soap: 95, air: 18, vape: false, smoke: true, last_seen: 'Just now' },
-    { id: 8, name: '3F-NR - 3rd Floor North', soap: 88, air: 35, vape: false, smoke: false, last_seen: '2 min ago' }
+// =============================================
+// CONFIGURATION
+// =============================================
+const USE_DEMO_MODE = true;
+const API_BASE = '../../api/';
+let autoRefreshInterval = null;
+let isAutoRefreshEnabled = true;
+
+// Restroom Data
+let restrooms = [
+    { id: 1, name: 'GLR1 - Ground Left', soap: 85, air: 32, vape: false, smoke: false },
+    { id: 2, name: 'GLR2 - Ground Right', soap: 45, air: 28, vape: true, smoke: false },
+    { id: 3, name: '1F-FR - 1st Floor Front', soap: 12, air: 55, vape: false, smoke: false },
+    { id: 4, name: '1F-RR - 1st Floor Rear', soap: 92, air: 25, vape: false, smoke: false },
+    { id: 5, name: '2F-MR - 2nd Floor Main', soap: 67, air: 85, vape: false, smoke: false },
+    { id: 6, name: '2F-LR - 2nd Floor Left', soap: 78, air: 42, vape: false, smoke: false },
+    { id: 7, name: '3F-CR - 3rd Floor CR', soap: 95, air: 18, vape: false, smoke: true },
+    { id: 8, name: '3F-NR - 3rd Floor North', soap: 88, air: 35, vape: false, smoke: false }
 ];
 
 function getStatusClass(soap, air, vape, smoke) {
@@ -320,34 +465,50 @@ function getFillClass(soap, air, vape, smoke) {
     return 'fill-good';
 }
 
+function getSoapValueClass(soap) {
+    if (soap < 20) return 'low';
+    if (soap < 50) return 'warning';
+    return '';
+}
+
+function getAirValueClass(air) {
+    if (air > 70) return 'low';
+    if (air > 40) return 'warning';
+    return '';
+}
+
 function renderRestrooms() {
     const grid = document.getElementById('restroomGrid');
+    if (!grid) return;
+    
     grid.innerHTML = restrooms.map(r => {
         const statusClass = getStatusClass(r.soap, r.air, r.vape, r.smoke);
         const statusText = getStatusText(r.soap, r.air, r.vape, r.smoke);
         const fillClass = getFillClass(r.soap, r.air, r.vape, r.smoke);
+        const soapClass = getSoapValueClass(r.soap);
+        const airClass = getAirValueClass(r.air);
         
         return `
             <div class="restroom-card">
                 <div class="restroom-header">
-                    <span class="restroom-name">${r.name}</span>
+                    <span class="restroom-name">${escapeHtml(r.name)}</span>
                     <span class="status-badge status-${statusClass === 'good' ? 'good' : (statusClass === 'warning' ? 'warning' : 'critical')}">${statusText}</span>
                 </div>
                 <div class="restroom-body">
                     <div class="sensor-row">
                         <span class="sensor-label">🧴 Soap Level</span>
-                        <span class="sensor-value ${r.soap < 20 ? 'low' : (r.soap < 50 ? 'warning' : '')}">${r.soap}%</span>
+                        <span class="sensor-value ${soapClass}">${Math.round(r.soap)}%</span>
                     </div>
                     <div class="progress-bar">
-                        <div class="progress-fill ${fillClass}" style="width: ${r.soap}%"></div>
+                        <div class="progress-fill ${fillClass}" style="width: ${Math.min(Math.max(r.soap, 0), 100)}%"></div>
                     </div>
                     
                     <div class="sensor-row">
                         <span class="sensor-label">🌬️ Air Quality (AQI)</span>
-                        <span class="sensor-value ${r.air > 70 ? 'low' : (r.air > 40 ? 'warning' : '')}">${r.air}</span>
+                        <span class="sensor-value ${airClass}">${Math.round(r.air)}</span>
                     </div>
                     <div class="progress-bar">
-                        <div class="progress-fill ${r.air > 70 ? 'fill-critical' : (r.air > 40 ? 'fill-warning' : 'fill-good')}" style="width: ${Math.min(r.air, 100)}%"></div>
+                        <div class="progress-fill ${r.air > 70 ? 'fill-critical' : (r.air > 40 ? 'fill-warning' : 'fill-good')}" style="width: ${Math.min(Math.max(r.air, 0), 100)}%"></div>
                     </div>
                     
                     ${r.vape ? `<div class="sensor-row"><span class="sensor-label">🚭 Vape Detection</span><span class="alert-icon">🔴 ACTIVE</span></div>` : ''}
@@ -360,19 +521,106 @@ function renderRestrooms() {
     document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleTimeString()}`;
 }
 
-renderRestrooms();
-
-// Simulate auto-refresh every 10 seconds (for demo)
-setInterval(() => {
-    // Randomly update some values for demo
+function updateSensorData() {
+    if (!USE_DEMO_MODE) {
+        // In live mode, fetch from API
+        fetchRealTimeData();
+        return;
+    }
+    
+    // Demo mode: simulate random changes
     restrooms.forEach(r => {
-        r.soap = Math.max(0, Math.min(100, r.soap + (Math.random() - 0.5) * 5));
-        r.air = Math.max(0, Math.min(150, r.air + (Math.random() - 0.5) * 3));
-        r.vape = Math.random() < 0.05 ? !r.vape : r.vape;
-        r.smoke = Math.random() < 0.03 ? !r.smoke : r.smoke;
+        // Soap gradually decreases
+        r.soap = Math.max(0, Math.min(100, r.soap + (Math.random() - 0.6) * 3));
+        // Air quality fluctuates
+        r.air = Math.max(0, Math.min(150, r.air + (Math.random() - 0.5) * 4));
+        // Random vape/smoke detection (5% chance to toggle)
+        if (Math.random() < 0.03) r.vape = !r.vape;
+        if (Math.random() < 0.02) r.smoke = !r.smoke;
     });
+    
     renderRestrooms();
-}, 10000);
+}
+
+function fetchRealTimeData() {
+    // This will be implemented when API is ready
+    fetch(API_BASE + 'get_sensors.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.restrooms) {
+                restrooms = data.restrooms;
+                renderRestrooms();
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching sensor data:', error);
+        });
+}
+
+function manualRefresh() {
+    updateSensorData();
+}
+
+function startAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+    if (isAutoRefreshEnabled) {
+        autoRefreshInterval = setInterval(() => {
+            updateSensorData();
+        }, 10000);
+    }
+}
+
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+}
+
+function toggleAutoRefresh() {
+    const toggle = document.getElementById('autoRefreshToggle');
+    isAutoRefreshEnabled = toggle.checked;
+    
+    if (isAutoRefreshEnabled) {
+        startAutoRefresh();
+    } else {
+        stopAutoRefresh();
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function toggleDemoMode() {
+    if (confirm('Toggle between Demo and Live mode?\n\nCurrently in: DEMO MODE\n\nNote: Live mode would connect to:\n- api/get_sensors.php\n- Real-time sensor data from ESP32 devices')) {
+        alert('Switching to live mode would fetch real sensor data from the database.');
+        window.location.reload();
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    renderRestrooms();
+    startAutoRefresh();
+    
+    const autoToggle = document.getElementById('autoRefreshToggle');
+    if (autoToggle) {
+        autoToggle.addEventListener('change', toggleAutoRefresh);
+    }
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+});
 </script>
 </body>
 </html>
