@@ -34,7 +34,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
             --text-dark: #1a0000;
             --text-mid: #4a1010;
             --shadow: rgba(197,0,0,0.18);
+            --green-success: #2e7d32;
+            --yellow-warning: #f9a825;
             --gray-border: #e0d8c8;
+            --blue-info: #1565C0;
         }
         body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text-dark); }
         .dashboard-wrapper { display: flex; min-height: 100vh; }
@@ -96,24 +99,51 @@ $current_page = basename($_SERVER['PHP_SELF']);
         .user-name { font-weight: 700; font-size: 0.88rem; }
         .user-role { font-size: 0.7rem; opacity: 0.6; }
         
-        .notification-filters { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-        .filter-btn { padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--gray-border); background: var(--white); cursor: pointer; font-size: 0.75rem; transition: all 0.2s; }
+        .notification-filters {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            border: 1px solid var(--gray-border);
+            background: var(--white);
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
         .filter-btn.active { background: var(--red-deep); color: var(--white); border-color: var(--red-deep); }
-        .notification-item { background: var(--white); border-radius: 12px; border: 1px solid var(--gray-border); padding: 1rem 1.5rem; margin-bottom: 0.8rem; display: flex; gap: 1rem; align-items: flex-start; transition: all 0.2s; }
+        
+        .notification-item {
+            background: var(--white);
+            border-radius: 12px;
+            border: 1px solid var(--gray-border);
+            padding: 1rem 1.5rem;
+            margin-bottom: 0.8rem;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            transition: all 0.2s;
+        }
         .notification-item.unread { background: rgba(197,0,0,0.03); border-left: 3px solid var(--red-deep); }
-        .notification-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .notification-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.2rem; }
         .notification-icon.alert { background: rgba(197,0,0,0.1); }
         .notification-icon.info { background: rgba(21,101,192,0.1); }
         .notification-icon.success { background: rgba(46,125,50,0.1); }
         .notification-content { flex: 1; }
         .notification-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.2rem; }
-        .notification-message { font-size: 0.8rem; color: var(--text-mid); margin-bottom: 0.3rem; }
+        .notification-message { font-size: 0.8rem; color: var(--text-mid); margin-bottom: 0.3rem; white-space: pre-line; }
         .notification-time { font-size: 0.65rem; color: var(--text-mid); opacity: 0.6; }
-        .notification-action { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
-        .action-link { font-size: 0.7rem; color: var(--red-deep); text-decoration: none; font-weight: 600; cursor: pointer; }
+        .mark-read-btn { background: none; border: none; color: var(--blue-info); font-size: 0.7rem; cursor: pointer; margin-top: 0.3rem; }
         .empty-state { text-align: center; padding: 3rem; color: var(--text-mid); opacity: 0.6; }
-        .mark-all { text-align: right; margin-bottom: 1rem; }
-        .mark-all-btn { background: none; border: none; color: var(--red-deep); font-size: 0.75rem; cursor: pointer; font-weight: 600; }
+        .loading { text-align: center; padding: 3rem; color: var(--text-mid); }
+        
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .main-content { margin-left: 0; }
+        }
     </style>
 </head>
 <body>
@@ -137,120 +167,145 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
     <main class="main-content">
         <div class="top-bar">
-            <div class="page-title"><h1>Notifications & Alerts</h1><p>Stay updated on alerts, feedback, and reminders</p></div>
+            <div class="page-title"><h1>Notifications</h1><p>Updates and alerts from your supervisor</p></div>
             <div class="top-bar-right">
-                <form method="POST" action="../../auth/logout.php" style="margin:0;"><button type="submit" class="logout-btn">Logout</button></form>
+                <form method="POST" action="../../auth/logout.php"><button type="submit" class="logout-btn">Logout</button></form>
                 <div class="user-menu"><div class="user-info"><div class="user-name"><?php echo htmlspecialchars($fullName); ?></div><div class="user-role">Maintenance Staff</div></div><div class="user-avatar"><?php echo htmlspecialchars($initials); ?></div></div>
             </div>
         </div>
 
         <div class="notification-filters">
-            <button class="filter-btn active" onclick="filterNotifications('all')">All</button>
-            <button class="filter-btn" onclick="filterNotifications('unread')">Unread</button>
-            <button class="filter-btn" onclick="filterNotifications('alert')">Alerts</button>
-            <button class="filter-btn" onclick="filterNotifications('info')">Updates</button>
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="unread">Unread</button>
         </div>
-        
-        <div class="mark-all"><button class="mark-all-btn" onclick="markAllRead()">✓ Mark all as read</button></div>
-        
-        <div id="notificationsList">
-            <!-- Static demo notifications -->
-            <div class="notification-item unread" data-type="alert" data-read="false">
-                <div class="notification-icon alert">⚠️</div>
-                <div class="notification-content">
-                    <div class="notification-title">Critical: Soap Level Low</div>
-                    <div class="notification-message">1F-FR - 1st Floor Front soap dispenser is at 12%. Please refill immediately.</div>
-                    <div class="notification-time">30 minutes ago</div>
-                    <div class="notification-action"><a class="action-link" href="restroom_status.php">View Restroom →</a> <a class="action-link" onclick="markAsRead(this)">Mark as read</a></div>
-                </div>
-            </div>
-            
-            <div class="notification-item unread" data-type="alert" data-read="false">
-                <div class="notification-icon alert">🚭</div>
-                <div class="notification-content">
-                    <div class="notification-title">Vape Detected</div>
-                    <div class="notification-message">GLR2 - Ground Right vape sensor triggered at 08:15 AM. Please inspect the area.</div>
-                    <div class="notification-time">2 hours ago</div>
-                    <div class="notification-action"><a class="action-link" href="restroom_status.php">View Restroom →</a> <a class="action-link" onclick="markAsRead(this)">Mark as read</a></div>
-                </div>
-            </div>
-            
-            <div class="notification-item" data-type="info" data-read="true">
-                <div class="notification-icon info">📋</div>
-                <div class="notification-content">
-                    <div class="notification-title">Checklist Approved</div>
-                    <div class="notification-message">Your submission for GLR1 - Ground Left has been approved by Supervisor.</div>
-                    <div class="notification-time">Yesterday at 4:30 PM</div>
-                </div>
-            </div>
-            
-            <div class="notification-item" data-type="alert" data-read="true">
-                <div class="notification-icon alert">🌬️</div>
-                <div class="notification-content">
-                    <div class="notification-title">Air Quality Alert</div>
-                    <div class="notification-message">2F-MR - 2nd Floor Main AQI reached 85 (Unhealthy). Check ventilation system.</div>
-                    <div class="notification-time">Yesterday at 10:15 AM</div>
-                </div>
-            </div>
-            
-            <div class="notification-item" data-type="info" data-read="true">
-                <div class="notification-icon success">✓</div>
-                <div class="notification-content">
-                    <div class="notification-title">Checklist Flagged for Review</div>
-                    <div class="notification-message">Your submission for 1F-FR - 1st Floor Front requires re-inspection. Please check supervisor feedback.</div>
-                    <div class="notification-time">Apr 22, 2026 at 2:00 PM</div>
-                    <div class="notification-action"><a class="action-link" href="submissions.php">View Submission →</a></div>
-                </div>
-            </div>
-        </div>
+
+        <div id="notificationsList"><div class="loading">Loading notifications...</div></div>
     </main>
 </div>
 
 <script>
-function filterNotifications(type) {
-    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-    
-    const items = document.querySelectorAll('.notification-item');
-    items.forEach(item => {
-        if (type === 'all') {
-            item.style.display = 'flex';
-        } else if (type === 'unread') {
-            item.style.display = item.getAttribute('data-read') === 'false' ? 'flex' : 'none';
-        } else {
-            item.style.display = item.getAttribute('data-type') === type ? 'flex' : 'none';
-        }
-    });
-}
+let notifications = [];
+let currentFilter = 'all';
 
-function markAsRead(element) {
-    const item = element.closest('.notification-item');
-    item.setAttribute('data-read', 'true');
-    item.classList.remove('unread');
-    const actionDiv = item.querySelector('.notification-action');
-    if (actionDiv) {
-        const markLink = actionDiv.querySelector('.action-link:last-child');
-        if (markLink && markLink.textContent === 'Mark as read') {
-            markLink.remove();
+async function loadNotifications() {
+    const container = document.getElementById('notificationsList');
+    container.innerHTML = '<div class="loading">Loading notifications...</div>';
+    
+    try {
+        const response = await fetch('../../api/get_notifications.php?limit=50');
+        const result = await response.json();
+        
+        if (result.success) {
+            notifications = result.data.notifications;
+            displayNotifications();
+        } else {
+            container.innerHTML = '<div class="empty-state">Error loading notifications</div>';
         }
+    } catch (error) {
+        console.error('Error:', error);
+        container.innerHTML = '<div class="empty-state">Error loading notifications</div>';
     }
 }
 
-function markAllRead() {
-    const items = document.querySelectorAll('.notification-item');
-    items.forEach(item => {
-        item.setAttribute('data-read', 'true');
-        item.classList.remove('unread');
-        const actionDiv = item.querySelector('.notification-action');
-        if (actionDiv) {
-            const markLink = actionDiv.querySelector('.action-link:last-child');
-            if (markLink && markLink.textContent === 'Mark as read') {
-                markLink.remove();
-            }
-        }
-    });
-    alert('All notifications marked as read (Demo mode)');
+function displayNotifications() {
+    const container = document.getElementById('notificationsList');
+    let filtered = notifications;
+    
+    if (currentFilter === 'unread') {
+        filtered = notifications.filter(n => !n.is_read);
+    }
+    
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state">📭 No notifications</div>';
+        return;
+    }
+    
+    container.innerHTML = filtered.map(n => `
+        <div class="notification-item ${!n.is_read ? 'unread' : ''}" data-id="${n.id}">
+            <div class="notification-icon ${getIconType(n.type)}">${getIcon(n.type)}</div>
+            <div class="notification-content">
+                <div class="notification-title">${escapeHtml(n.title)}</div>
+                <div class="notification-message">${escapeHtml(n.message).replace(/\n/g, '<br>')}</div>
+                <div class="notification-time">${formatTime(n.created_at)}</div>
+                ${!n.is_read ? `<button class="mark-read-btn" onclick="markAsRead(${n.id})">Mark as read</button>` : ''}
+            </div>
+        </div>
+    `).join('');
 }
+
+function getIcon(type) {
+    const icons = {
+        'checklist_submitted': '📋',
+        'checklist_reviewed': '✓',
+        'alert': '⚠️',
+        'soap_low': '🧴',
+        'vape_detected': '🚭',
+        'system': '🔧'
+    };
+    return icons[type] || '📢';
+}
+
+function getIconType(type) {
+    if (type === 'checklist_reviewed') return 'success';
+    if (type === 'alert' || type === 'vape_detected') return 'alert';
+    return 'info';
+}
+
+async function markAsRead(id) {
+    try {
+        const response = await fetch('../../api/mark_notification_read.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notification_id: id })
+        });
+        const result = await response.json();
+        if (result.success) {
+            loadNotifications();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function filterNotifications(filter) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    if (event && event.target) event.target.classList.add('active');
+    displayNotifications();
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        currentFilter = this.getAttribute('data-filter');
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        displayNotifications();
+    });
+});
+
+loadNotifications();
+setInterval(loadNotifications, 30000);
 </script>
 </body>
 </html>

@@ -1,3 +1,26 @@
+<?php
+// ============================================================
+//  SmartWash - Supervisor Dashboard
+//  File: pages/supervisor/dashboard.php
+// ============================================================
+
+require_once '../../auth/session.php';
+requireRole(['supervisor']);
+
+$currentUser = currentUser();
+$fullName = $currentUser['full_name'] ?? 'Supervisor';
+$initials = '';
+$nameParts = explode(' ', $fullName);
+foreach ($nameParts as $part) {
+    if (strlen($part) > 0 && strlen($initials) < 2) {
+        $initials .= strtoupper($part[0]);
+    }
+}
+if (strlen($initials) < 2 && strlen($fullName) > 0) {
+    $initials = strtoupper(substr($fullName, 0, 2));
+}
+$current_page = basename($_SERVER['PHP_SELF']);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +30,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
@@ -22,6 +46,7 @@
             --yellow-warning: #f9a825;
             --orange-critical: #f57c00;
             --gray-border: #e0d8c8;
+            --blue-info: #1565C0;
         }
         body {
             font-family: 'DM Sans', sans-serif;
@@ -177,7 +202,12 @@
             gap: 1.5rem;
         }
 
-        /* Notification Bell */
+        /* Notification Wrapper & Dropdown */
+        .notification-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
         .notification-bell {
             position: relative;
             cursor: pointer;
@@ -216,13 +246,145 @@
             border-radius: 20px;
             min-width: 18px;
             text-align: center;
+            display: none;
+        }
+
+        .notification-dropdown {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 380px;
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            max-height: 450px;
+            overflow-y: auto;
+        }
+
+        .dropdown-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--gray-border);
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--white);
+        }
+
+        .mark-all-read {
+            background: none;
+            border: none;
+            color: var(--red-deep);
+            font-size: 0.7rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .mark-all-read:hover {
+            text-decoration: underline;
+        }
+
+        .dropdown-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--gray-border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: var(--light);
+        }
+
+        .dropdown-item.unread {
+            background: rgba(197,0,0,0.03);
+            border-left: 3px solid var(--red-deep);
+        }
+
+        .dropdown-item-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .dropdown-item-message {
+            font-size: 0.75rem;
+            color: var(--text-mid);
+            margin-bottom: 0.2rem;
+            line-height: 1.4;
+        }
+
+        .dropdown-item-time {
+            font-size: 0.65rem;
+            color: var(--text-mid);
+            opacity: 0.6;
+            margin-top: 0.3rem;
+        }
+
+        .dropdown-footer {
+            padding: 10px 15px;
+            border-top: 1px solid var(--gray-border);
+            text-align: center;
+            position: sticky;
+            bottom: 0;
+            background: var(--white);
+        }
+
+        .dropdown-footer a {
+            color: var(--red-deep);
+            text-decoration: none;
+            font-size: 0.75rem;
+        }
+
+        .dropdown-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .dropdown-loading {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-mid);
+        }
+
+        .empty-notifications {
+            padding: 30px;
+            text-align: center;
+            color: var(--text-mid);
+            opacity: 0.6;
+        }
+
+        .logout-btn {
+            background: none;
+            border: 1px solid var(--gray-border);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-mid);
+            text-decoration: none;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logout-btn:hover {
+            background: var(--red-deep);
+            border-color: var(--red-deep);
+            color: var(--white);
+        }
+
+        .logout-btn:hover svg {
+            stroke: var(--white);
         }
 
         .user-menu {
             display: flex;
             align-items: center;
             gap: 1rem;
-            cursor: pointer;
         }
 
         .user-avatar {
@@ -255,7 +417,7 @@
         /* Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1.2rem;
             margin-bottom: 2rem;
         }
@@ -267,6 +429,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             transition: transform 0.2s, box-shadow 0.2s;
             border: 1px solid var(--gray-border);
+            cursor: pointer;
         }
 
         .stat-card:hover {
@@ -392,7 +555,7 @@
 
         .alert-badge.critical { background: var(--red-deep); box-shadow: 0 0 0 3px rgba(197,0,0,0.2); }
         .alert-badge.warning { background: var(--yellow-warning); }
-        .alert-badge.info { background: #2196f3; }
+        .alert-badge.info { background: var(--blue-info); }
 
         .alert-details {
             font-size: 0.85rem;
@@ -454,6 +617,7 @@
             display: flex;
             gap: 0.8rem;
             font-size: 0.65rem;
+            flex-wrap: wrap;
         }
 
         .stat-indicator {
@@ -510,6 +674,7 @@
             display: flex;
             gap: 1rem;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .checklist-rating {
@@ -604,15 +769,11 @@
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
+            .notification-dropdown {
+                width: 320px;
+                right: -60px;
+            }
         }
-
-        .logout-btn:hover {
-    background: var(--red-deep);
-    color: var(--white);
-}
-.logout-btn:hover svg {
-    stroke: var(--white);
-}
     </style>
 </head>
 <body>
@@ -641,11 +802,11 @@
                 </a>
             </div>
             <div class="nav-item"><a href="live_monitoring.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>Live Monitoring</a></div>
-            <div class="nav-item"><a href="vape_incidents.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6.672 1.911a1 1 0 10-1.932.518l.259.966a1 1 0 001.932-.518l-.26-.966zM2.429 4.74a1 1 0 10-.518 1.932l.966.259a1 1 0 00.518-1.932l-.966-.26zm8.814 3.748a1 1 0 00-1.414-1.414L6.5 10.1l-1.5-1.5a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/><path d="M16 15.5a2.5 2.5 0 00-5 0v1a2.5 2.5 0 005 0v-1z"/></svg>Vape Incidents</a></div>
+            <div class="nav-item"><a href="vape_incidents.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v4a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Vape Incidents</a></div>
             <div class="nav-item"><a href="air_quality.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4a1 1 0 011-1h8a1 1 0 011 1v1a1 1 0 01-1 1H6a1 1 0 01-1-1V4zM4 9a1 1 0 011-1h10a1 1 0 011 1v1a1 1 0 01-1 1H5a1 1 0 01-1-1V9zM6 14a1 1 0 100-2h8a1 1 0 100 2H6z" clip-rule="evenodd"/></svg>Air Quality</a></div>
             <div class="nav-item"><a href="checklists.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h6a1 1 0 100-2H7zm0 4a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>Checklists</a></div>
             <div class="nav-item"><a href="maintenance_log.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>Maintenance Log</a></div>
-            <div class="nav-item"><a href="alerts.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Alerts</a></div>
+            <div class="nav-item"><a href="alerts.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v4a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Alerts</a></div>
             <div class="nav-item"><a href="staff_management.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>Staff Management</a></div>
             <div class="nav-item"><a href="settings.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>Settings</a></div>
         </nav>
@@ -658,36 +819,60 @@
                 <h1>Supervisor Dashboard</h1>
                 <p>Overview of all restroom facilities and real-time status</p>
             </div>
-<div class="top-bar-right">
-    <div class="notification-bell" id="notificationBell">
-        <div class="bell-icon">
-            <svg viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
-            </svg>
-        </div>
-        <span class="notification-badge" id="notificationCount">3</span>
+            <div class="top-bar-right">
+                <!-- Notification Bell with Dropdown -->
+                <div class="notification-wrapper">
+                    <div class="notification-bell" id="notificationBell">
+                        <div class="bell-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
+                            </svg>
+                        </div>
+                        <span class="notification-badge" id="notificationBadge">0</span>
+                    </div>
+                    
+                    <!-- Dropdown -->
+                    <!-- Dropdown -->
+<div class="notification-dropdown" id="notificationDropdown" style="display: none;">
+    <div class="dropdown-header">
+        <span>🔔 Notifications</span>
+        <button id="markAllReadBtn" class="mark-all-read">Mark all read</button>
     </div>
-    <div class="user-menu">
-        <div class="user-info">
-            <div class="user-name">John M. Dela Cruz</div>
-            <div class="user-role">Supervisor</div>
-        </div>
-        <div class="user-avatar">JD</div>
+    <div id="dropdownNotificationsList">
+        <div class="dropdown-loading">Loading notifications...</div>
     </div>
-    <a href="../../auth/logout.php" class="logout-btn" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--light); border-radius: 8px; color: var(--text-mid); text-decoration: none; transition: all 0.2s;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-            <polyline points="16 17 21 12 16 7"></polyline>
-            <line x1="21" y1="12" x2="9" y2="12"></line>
-        </svg>
-        Logout
-    </a>
+    <div class="dropdown-footer">
+        <span style="font-size: 0.7rem; color: var(--text-mid); opacity: 0.6;">
+            Click any notification to go to the relevant page
+        </span>
+    </div>
 </div>
-    </div>      <!-- Closes top-bar - ADD THIS LINE! -->
+                </div>
+                
+                <form method="POST" action="../../auth/logout.php" style="margin:0;">
+                    <button type="submit" class="logout-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        Logout
+                    </button>
+                </form>
+                
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name"><?php echo htmlspecialchars($fullName); ?></div>
+                        <div class="user-role">Supervisor</div>
+                    </div>
+                    <div class="user-avatar"><?php echo htmlspecialchars($initials); ?></div>
+                </div>
+            </div>
+        </div>
 
         <!-- Stats Cards -->
         <div class="stats-grid">
-            <div class="stat-card">
+            <div class="stat-card" onclick="location.href='live_monitoring.php'">
                 <div class="stat-header">
                     <span>Total Facilities</span>
                     <div class="stat-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg></div>
@@ -695,15 +880,15 @@
                 <div class="stat-value" id="totalRestrooms">8</div>
                 <div class="stat-label">Active Restrooms</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" onclick="location.href='alerts.php'">
                 <div class="stat-header">
                     <span>Active Alerts</span>
-                    <div class="stat-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg></div>
+                    <div class="stat-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v4a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg></div>
                 </div>
-                <div class="stat-value" id="activeAlerts">4</div>
+                <div class="stat-value" id="activeAlerts">5</div>
                 <div class="stat-label">Need Attention</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" onclick="location.href='checklists.php'">
                 <div class="stat-header">
                     <span>Pending Review</span>
                     <div class="stat-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg></div>
@@ -711,7 +896,7 @@
                 <div class="stat-value" id="pendingChecklists">3</div>
                 <div class="stat-label">Checklists to Review</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" onclick="location.href='vape_incidents.php'">
                 <div class="stat-header">
                     <span>Today's Incidents</span>
                     <div class="stat-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6.672 1.911a1 1 0 10-1.932.518l.259.966a1 1 0 001.932-.518l-.26-.966zM2.429 4.74a1 1 0 10-.518 1.932l.966.259a1 1 0 00.518-1.932l-.966-.26zm8.814 3.748a1 1 0 00-1.414-1.414L6.5 10.1l-1.5-1.5a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/><path d="M16 15.5a2.5 2.5 0 00-5 0v1a2.5 2.5 0 005 0v-1z"/></svg></div>
@@ -730,7 +915,7 @@
                     <a href="alerts.php">View All →</a>
                 </div>
                 <div class="card-body" id="activeAlertsList">
-                    <!-- Static demo data will be replaced by JS -->
+                    <div class="loading">Loading alerts...</div>
                 </div>
             </div>
 
@@ -738,10 +923,10 @@
             <div class="dashboard-card">
                 <div class="card-header">
                     <h3>🚻 Restroom Status</h3>
-                    <a href="live-monitoring.php">View All →</a>
+                    <a href="live_monitoring.php">View All →</a>
                 </div>
                 <div class="card-body" id="restroomStatusGrid">
-                    <!-- Static demo data will be replaced by JS -->
+                    <div class="loading">Loading restrooms...</div>
                 </div>
             </div>
 
@@ -749,10 +934,10 @@
             <div class="dashboard-card">
                 <div class="card-header">
                     <h3>🚭 Recent Incidents</h3>
-                    <a href="vape-incidents.php">View All →</a>
+                    <a href="vape_incidents.php">View All →</a>
                 </div>
                 <div class="card-body" id="incidentsList">
-                    <!-- Static demo data will be replaced by JS -->
+                    <div class="loading">Loading incidents...</div>
                 </div>
             </div>
 
@@ -760,7 +945,7 @@
             <div class="dashboard-card">
                 <div class="card-header">
                     <h3>🌬️ Air Quality Summary</h3>
-                    <a href="air-quality.php">View Report →</a>
+                    <a href="air_quality.php">View Report →</a>
                 </div>
                 <div class="card-body">
                     <canvas id="airQualityChart" style="max-height: 200px; width: 100%;"></canvas>
@@ -775,7 +960,7 @@
                     <a href="checklists.php">Review All →</a>
                 </div>
                 <div class="card-body" id="pendingChecklistsList">
-                    <!-- Static demo data will be replaced by JS -->
+                    <div class="loading">Loading checklists...</div>
                 </div>
             </div>
 
@@ -783,10 +968,10 @@
             <div class="dashboard-card">
                 <div class="card-header">
                     <h3>📋 Recent Maintenance Log</h3>
-                    <a href="maintenance-log.php">View Full Log →</a>
+                    <a href="maintenance_log.php">View Full Log →</a>
                 </div>
                 <div class="card-body" id="maintenanceLogList">
-                    <!-- Static demo data will be replaced by JS -->
+                    <div class="loading">Loading logs...</div>
                 </div>
             </div>
         </div>
@@ -798,60 +983,56 @@
     🧪 DEMO MODE | Using Sample Data
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 // =============================================
 // CONFIGURATION
 // =============================================
-// Set to false when database is ready to use real API endpoints
 const USE_DEMO_MODE = true;
-
-// API endpoints (will be used when USE_DEMO_MODE = false)
 const API_BASE = '../../api/';
 
 // =============================================
-// DEMO DATA (for static preview)
+// DEMO DATA
 // =============================================
 const DEMO_DATA = {
     activeAlerts: [
-        { id: 1, restroom_name: 'GLR1 - Ground Left', type: 'Soap Low', severity: 'warning', created_at: '2024-01-15 09:30:00' },
-        { id: 2, restroom_name: 'GLR2 - Ground Right', type: 'Vape Detected', severity: 'critical', created_at: '2024-01-15 10:15:00' },
-        { id: 3, restroom_name: '2F-MR - 2nd Floor Main', type: 'Air Quality Poor', severity: 'critical', created_at: '2024-01-15 10:45:00' },
-        { id: 4, restroom_name: '3F-CR - 3rd Floor CR', type: 'Smoke Detected', severity: 'critical', created_at: '2024-01-15 11:00:00' },
-        { id: 5, restroom_name: '1F-FR - 1st Floor Front', type: 'Soap Low', severity: 'warning', created_at: '2024-01-15 08:20:00' }
+        { id: 1, restroom_name: 'GLR1 - Ground Left', type: 'Soap Low', severity: 'warning', created_at: '2026-04-28 09:30:00' },
+        { id: 2, restroom_name: 'GLR2 - Ground Right', type: 'Vape Detected', severity: 'critical', created_at: '2026-04-28 10:15:00' },
+        { id: 3, restroom_name: '2F-MR - 2nd Floor Main', type: 'Air Quality Poor', severity: 'critical', created_at: '2026-04-28 10:45:00' },
+        { id: 4, restroom_name: '3F-CR - 3rd Floor CR', type: 'Smoke Detected', severity: 'critical', created_at: '2026-04-28 11:00:00' },
+        { id: 5, restroom_name: '1F-FR - 1st Floor Front', type: 'Soap Low', severity: 'warning', created_at: '2026-04-28 08:20:00' }
     ],
     
     restrooms: [
-        { id: 1, name: 'GLR1 - Ground Left', soap_level: 85, air_quality: 32, smoke_detected: false, vape_detected: false, has_critical: false, has_warning: false },
-        { id: 2, name: 'GLR2 - Ground Right', soap_level: 45, air_quality: 28, smoke_detected: false, vape_detected: true, has_critical: true, has_warning: false },
-        { id: 3, name: '1F-FR - 1st Floor Front', soap_level: 12, air_quality: 55, smoke_detected: false, vape_detected: false, has_critical: false, has_warning: true },
-        { id: 4, name: '1F-RR - 1st Floor Rear', soap_level: 92, air_quality: 25, smoke_detected: false, vape_detected: false, has_critical: false, has_warning: false },
-        { id: 5, name: '2F-MR - 2nd Floor Main', soap_level: 67, air_quality: 85, smoke_detected: false, vape_detected: false, has_critical: true, has_warning: false },
-        { id: 6, name: '2F-LR - 2nd Floor Left', soap_level: 78, air_quality: 42, smoke_detected: false, vape_detected: false, has_critical: false, has_warning: true },
-        { id: 7, name: '3F-CR - 3rd Floor CR', soap_level: 95, air_quality: 18, smoke_detected: true, vape_detected: false, has_critical: true, has_warning: false },
-        { id: 8, name: '3F-NR - 3rd Floor North', soap_level: 88, air_quality: 35, smoke_detected: false, vape_detected: false, has_critical: false, has_warning: false }
+        { id: 1, name: 'GLR1 - Ground Left', soap_level: 85, air_quality: 32, vape_detected: false, smoke_detected: false, has_critical: false, has_warning: false },
+        { id: 2, name: 'GLR2 - Ground Right', soap_level: 45, air_quality: 28, vape_detected: true, smoke_detected: false, has_critical: true, has_warning: false },
+        { id: 3, name: '1F-FR - 1st Floor Front', soap_level: 12, air_quality: 55, vape_detected: false, smoke_detected: false, has_critical: false, has_warning: true },
+        { id: 4, name: '1F-RR - 1st Floor Rear', soap_level: 92, air_quality: 25, vape_detected: false, smoke_detected: false, has_critical: false, has_warning: false },
+        { id: 5, name: '2F-MR - 2nd Floor Main', soap_level: 67, air_quality: 85, vape_detected: false, smoke_detected: false, has_critical: true, has_warning: false },
+        { id: 6, name: '2F-LR - 2nd Floor Left', soap_level: 78, air_quality: 42, vape_detected: false, smoke_detected: false, has_critical: false, has_warning: true },
+        { id: 7, name: '3F-CR - 3rd Floor CR', soap_level: 95, air_quality: 18, vape_detected: false, smoke_detected: true, has_critical: true, has_warning: false },
+        { id: 8, name: '3F-NR - 3rd Floor North', soap_level: 88, air_quality: 35, vape_detected: false, smoke_detected: false, has_critical: false, has_warning: false }
     ],
     
     incidents: [
-        { id: 1, type: 'vape', restroom_name: 'GLR2 - Ground Right', timestamp: '2024-01-15 10:15:00' },
-        { id: 2, type: 'smoke', restroom_name: '3F-CR - 3rd Floor CR', timestamp: '2024-01-15 09:45:00' },
-        { id: 3, type: 'vape', restroom_name: '2F-MR - 2nd Floor Main', timestamp: '2024-01-14 16:20:00' },
-        { id: 4, type: 'vape', restroom_name: 'GLR1 - Ground Left', timestamp: '2024-01-14 14:30:00' },
-        { id: 5, type: 'smoke', restroom_name: '1F-RR - 1st Floor Rear', timestamp: '2024-01-14 11:15:00' }
+        { id: 1, type: 'vape', restroom_name: 'GLR2 - Ground Right', timestamp: '2026-04-28 10:15:00' },
+        { id: 2, type: 'smoke', restroom_name: '3F-CR - 3rd Floor CR', timestamp: '2026-04-28 09:45:00' },
+        { id: 3, type: 'vape', restroom_name: '2F-MR - 2nd Floor Main', timestamp: '2026-04-27 16:20:00' },
+        { id: 4, type: 'vape', restroom_name: 'GLR1 - Ground Left', timestamp: '2026-04-27 14:30:00' },
+        { id: 5, type: 'smoke', restroom_name: '1F-RR - 1st Floor Rear', timestamp: '2026-04-27 11:15:00' }
     ],
     
     checklists: [
-        { id: 1, restroom_name: 'GLR1 - Ground Left', staff_name: 'Rey M. Santos', rating: 5, submitted_at: '2024-01-15 09:00:00' },
-        { id: 2, restroom_name: 'GLR2 - Ground Right', staff_name: 'Maria L. Cruz', rating: 3, submitted_at: '2024-01-15 09:30:00' },
-        { id: 3, restroom_name: '1F-FR - 1st Floor Front', staff_name: 'Rey M. Santos', rating: 4, submitted_at: '2024-01-15 10:00:00' }
+        { id: 1, restroom_name: 'GLR1 - Ground Left', staff_name: 'Rey M. Santos', rating: 5, submitted_at: '2026-04-28 09:00:00' },
+        { id: 2, restroom_name: 'GLR2 - Ground Right', staff_name: 'Maria L. Cruz', rating: 3, submitted_at: '2026-04-28 09:30:00' },
+        { id: 3, restroom_name: '1F-FR - 1st Floor Front', staff_name: 'Rey M. Santos', rating: 4, submitted_at: '2026-04-28 10:00:00' }
     ],
     
     maintenanceLogs: [
-        { id: 1, action: 'Soap refilled', restroom_name: '1F-FR - 1st Floor Front', staff_name: 'Rey M. Santos', timestamp: '2024-01-15 09:15:00' },
-        { id: 2, action: 'Air freshener triggered', restroom_name: '2F-MR - 2nd Floor Main', staff_name: 'System Auto', timestamp: '2024-01-15 08:45:00' },
-        { id: 3, action: 'Vape incident reported', restroom_name: 'GLR2 - Ground Right', staff_name: 'Sensor', timestamp: '2024-01-15 10:15:00' },
-        { id: 4, action: 'Cleaned and sanitized', restroom_name: '3F-CR - 3rd Floor CR', staff_name: 'Maria L. Cruz', timestamp: '2024-01-15 08:00:00' },
-        { id: 5, action: 'Soap refilled', restroom_name: 'GLR1 - Ground Left', staff_name: 'Rey M. Santos', timestamp: '2024-01-15 07:30:00' }
+        { id: 1, action: 'Soap refilled', restroom_name: '1F-FR - 1st Floor Front', staff_name: 'Rey M. Santos', timestamp: '2026-04-28 09:15:00' },
+        { id: 2, action: 'Air freshener triggered', restroom_name: '2F-MR - 2nd Floor Main', staff_name: 'System Auto', timestamp: '2026-04-28 08:45:00' },
+        { id: 3, action: 'Vape incident reported', restroom_name: 'GLR2 - Ground Right', staff_name: 'Sensor', timestamp: '2026-04-28 10:15:00' },
+        { id: 4, action: 'Cleaned and sanitized', restroom_name: '3F-CR - 3rd Floor CR', staff_name: 'Maria L. Cruz', timestamp: '2026-04-28 08:00:00' },
+        { id: 5, action: 'Soap refilled', restroom_name: 'GLR1 - Ground Left', staff_name: 'Rey M. Santos', timestamp: '2026-04-28 07:30:00' }
     ],
     
     airQualityReadings: {
@@ -859,113 +1040,6 @@ const DEMO_DATA = {
         values: [28, 25, 22, 30, 45, 68, 72, 65, 58, 42, 35, 30]
     }
 };
-
-// =============================================
-// FETCH FUNCTIONS (Will connect to real API when DB is ready)
-// =============================================
-
-async function fetchActiveAlerts() {
-    if (USE_DEMO_MODE) {
-        displayActiveAlerts(DEMO_DATA.activeAlerts);
-        return;
-    }
-    
-    try {
-        const response = await fetch(API_BASE + 'get_alerts.php?status=active&limit=5');
-        const data = await response.json();
-        displayActiveAlerts(data.alerts || []);
-    } catch (error) {
-        console.error('Error fetching alerts:', error);
-        displayActiveAlerts([]);
-    }
-}
-
-async function fetchRestroomStatus() {
-    if (USE_DEMO_MODE) {
-        displayRestroomStatus(DEMO_DATA.restrooms);
-        return;
-    }
-    
-    try {
-        const response = await fetch(API_BASE + 'get_sensors.php?all_restrooms=1');
-        const data = await response.json();
-        displayRestroomStatus(data.restrooms || []);
-    } catch (error) {
-        console.error('Error fetching restroom status:', error);
-        displayRestroomStatus([]);
-    }
-}
-
-async function fetchIncidents() {
-    if (USE_DEMO_MODE) {
-        displayIncidents(DEMO_DATA.incidents);
-        return;
-    }
-    
-    try {
-        const response = await fetch(API_BASE + 'get_incidents.php?days=7&limit=5');
-        const data = await response.json();
-        displayIncidents(data.incidents || []);
-    } catch (error) {
-        console.error('Error fetching incidents:', error);
-        displayIncidents([]);
-    }
-}
-
-async function fetchPendingChecklists() {
-    if (USE_DEMO_MODE) {
-        displayPendingChecklists(DEMO_DATA.checklists);
-        return;
-    }
-    
-    try {
-        const response = await fetch(API_BASE + 'get_checklists.php?status=pending&limit=5');
-        const data = await response.json();
-        displayPendingChecklists(data.checklists || []);
-    } catch (error) {
-        console.error('Error fetching checklists:', error);
-        displayPendingChecklists([]);
-    }
-}
-
-async function fetchMaintenanceLogs() {
-    if (USE_DEMO_MODE) {
-        displayMaintenanceLogs(DEMO_DATA.maintenanceLogs);
-        return;
-    }
-    
-    try {
-        const response = await fetch(API_BASE + 'get_logs.php?limit=5');
-        const data = await response.json();
-        displayMaintenanceLogs(data.logs || []);
-    } catch (error) {
-        console.error('Error fetching logs:', error);
-        displayMaintenanceLogs([]);
-    }
-}
-
-async function fetchAirQualityChart() {
-    if (USE_DEMO_MODE) {
-        displayAirQualityChart(DEMO_DATA.airQualityReadings);
-        return;
-    }
-    
-    try {
-        const response = await fetch(API_BASE + 'get_air_quality.php?hours=24');
-        const data = await response.json();
-        if (data.readings && data.readings.length > 0) {
-            displayAirQualityChart({
-                labels: data.readings.map(r => r.hour),
-                values: data.readings.map(r => r.aqi)
-            });
-        } else {
-            displayAirQualityChart(DEMO_DATA.airQualityReadings);
-        }
-    } catch (error) {
-        console.error('Error fetching air quality:', error);
-        displayAirQualityChart(DEMO_DATA.airQualityReadings);
-    }
-}
 
 // =============================================
 // DISPLAY FUNCTIONS
@@ -1006,7 +1080,7 @@ function displayRestroomStatus(restrooms) {
             ${restrooms.map(restroom => {
                 const statusClass = restroom.has_critical ? 'critical' : (restroom.has_warning ? 'warning' : '');
                 return `
-                    <div class="restroom-card ${statusClass}" onclick="location.href='live-monitoring.php?restroom_id=${restroom.id}'">
+                    <div class="restroom-card ${statusClass}" onclick="location.href='live_monitoring.php?restroom_id=${restroom.id}'">
                         <div class="restroom-name">${escapeHtml(restroom.name)}</div>
                         <div class="restroom-stats">
                             <div class="stat-indicator">
@@ -1151,49 +1225,224 @@ function displayAirQualityChart(data) {
 // ACTION FUNCTIONS
 // =============================================
 
-async function approveChecklist(id) {
+function approveChecklist(id) {
     if (USE_DEMO_MODE) {
         alert(`[DEMO] Checklist #${id} approved. In live mode, this would update the database.`);
-        // Remove from UI in demo mode
-        const container = document.getElementById('pendingChecklistsList');
-        const currentHTML = container.innerHTML;
-        // Simple demo removal (in real app, would refresh from API)
         fetchPendingChecklists();
-        return;
-    }
-    
-    try {
-        const response = await fetch(API_BASE + 'review_checklist.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: id, action: 'approve' })
-        });
-        if (response.ok) {
-            fetchPendingChecklists();
-        }
-    } catch (error) {
-        console.error('Error approving checklist:', error);
     }
 }
 
-async function flagChecklist(id) {
+function flagChecklist(id) {
     if (USE_DEMO_MODE) {
         alert(`[DEMO] Checklist #${id} flagged. In live mode, this would update the database.`);
         fetchPendingChecklists();
-        return;
     }
-    
+}
+
+// =============================================
+// NOTIFICATION FUNCTIONS
+// =============================================
+
+let isDropdownOpen = false;
+
+async function fetchNotificationCount() {
     try {
-        const response = await fetch(API_BASE + 'review_checklist.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: id, action: 'flag' })
-        });
-        if (response.ok) {
-            fetchPendingChecklists();
+        const response = await fetch(API_BASE + 'get_notifications.php?unread_only=true');
+        const result = await response.json();
+        
+        if (result.success) {
+            const badge = document.getElementById('notificationBadge');
+            if (result.data.unread_count > 0) {
+                badge.textContent = result.data.unread_count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
         }
     } catch (error) {
-        console.error('Error flagging checklist:', error);
+        console.error('Error fetching notification count:', error);
+    }
+}
+
+async function loadNotificationDropdown() {
+    const container = document.getElementById('dropdownNotificationsList');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="dropdown-loading">📬 Loading notifications...</div>';
+    
+    try {
+        const response = await fetch(API_BASE + 'get_notifications.php?limit=10');
+        const result = await response.json();
+        
+        if (result.success && result.data.notifications.length > 0) {
+            const notifications = result.data.notifications;
+            
+            container.innerHTML = notifications.map(n => `
+                <div class="dropdown-item ${!n.is_read ? 'unread' : ''}" 
+                     data-id="${n.id}" 
+                     data-type="${n.type}"
+                     onclick="handleNotificationClick(${n.id}, '${n.type}')">
+                    <div class="dropdown-item-title">${getNotificationIcon(n.type)} ${escapeHtml(n.title)}</div>
+                    <div class="dropdown-item-message">${escapeHtml(n.message.substring(0, 80))}${n.message.length > 80 ? '...' : ''}</div>
+                    <div class="dropdown-item-time">${formatTime(n.created_at)}</div>
+                </div>
+            `).join('');
+            
+            // Update badge after showing dropdown
+            const badge = document.getElementById('notificationBadge');
+            if (result.data.unread_count > 0) {
+                badge.textContent = result.data.unread_count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        } else {
+            container.innerHTML = '<div class="empty-notifications">📭 No notifications yet</div>';
+        }
+    } catch (error) {
+        console.error('Error loading dropdown:', error);
+        container.innerHTML = '<div class="empty-notifications">⚠️ Error loading notifications</div>';
+    }
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        'checklist_submitted': '📋',
+        'checklist_reviewed': '✓',
+        'alert': '⚠️',
+        'soap_low': '🧴',
+        'vape_detected': '🚭',
+        'air_quality': '🌬️',
+        'system': '🔧'
+    };
+    return icons[type] || '📢';
+}
+
+function getNotificationLink(type) {
+    const links = {
+        'checklist_submitted': 'checklists.php',
+        'checklist_reviewed': 'checklists.php',
+        'alert': 'alerts.php',
+        'soap_low': 'alerts.php',
+        'vape_detected': 'vape_incidents.php',
+        'air_quality': 'air_quality.php',
+        'system': 'settings.php'
+    };
+    return links[type] || 'dashboard.php';
+}
+
+async function handleNotificationClick(id, type) {
+    // Mark as read first
+    try {
+        await fetch(API_BASE + 'mark_notification_read.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notification_id: id })
+        });
+    } catch (error) {
+        console.error('Error marking notification read:', error);
+    }
+    
+    // Close dropdown and navigate
+    closeDropdown();
+    window.location.href = getNotificationLink(type);
+}
+
+async function markAllNotificationsRead() {
+    try {
+        const response = await fetch(API_BASE + 'get_notifications.php?limit=100');
+        const result = await response.json();
+        
+        if (result.success && result.data.notifications.length > 0) {
+            for (const n of result.data.notifications) {
+                if (!n.is_read) {
+                    await fetch(API_BASE + 'mark_notification_read.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ notification_id: n.id })
+                    });
+                }
+            }
+        }
+        
+        // Refresh dropdown and badge
+        await loadNotificationDropdown();
+        await fetchNotificationCount();
+        closeDropdown();
+        
+    } catch (error) {
+        console.error('Error marking all read:', error);
+    }
+}
+
+function toggleDropdown() {
+    const dropdown = document.getElementById('notificationDropdown');
+    if (!dropdown) return;
+    
+    if (isDropdownOpen) {
+        dropdown.style.display = 'none';
+        isDropdownOpen = false;
+    } else {
+        loadNotificationDropdown();
+        dropdown.style.display = 'block';
+        isDropdownOpen = true;
+    }
+}
+
+function closeDropdown() {
+    const dropdown = document.getElementById('notificationDropdown');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+        isDropdownOpen = false;
+    }
+}
+
+// Auto-refresh notification count every 15 seconds
+setInterval(fetchNotificationCount, 15000);
+
+// =============================================
+// FETCH FUNCTIONS
+// =============================================
+
+function fetchActiveAlerts() {
+    if (USE_DEMO_MODE) {
+        displayActiveAlerts(DEMO_DATA.activeAlerts);
+        return;
+    }
+}
+
+function fetchRestroomStatus() {
+    if (USE_DEMO_MODE) {
+        displayRestroomStatus(DEMO_DATA.restrooms);
+        return;
+    }
+}
+
+function fetchIncidents() {
+    if (USE_DEMO_MODE) {
+        displayIncidents(DEMO_DATA.incidents);
+        return;
+    }
+}
+
+function fetchPendingChecklists() {
+    if (USE_DEMO_MODE) {
+        displayPendingChecklists(DEMO_DATA.checklists);
+        return;
+    }
+}
+
+function fetchMaintenanceLogs() {
+    if (USE_DEMO_MODE) {
+        displayMaintenanceLogs(DEMO_DATA.maintenanceLogs);
+        return;
+    }
+}
+
+function fetchAirQualityChart() {
+    if (USE_DEMO_MODE) {
+        displayAirQualityChart(DEMO_DATA.airQualityReadings);
+        return;
     }
 }
 
@@ -1237,41 +1486,7 @@ function getAirStatus(aqi) {
     return 'good';
 }
 
-function toggleDemoMode() {
-    const badge = document.querySelector('.demo-badge');
-    if (confirm('Toggle between Demo and Live mode?\n\nCurrently in: ' + (USE_DEMO_MODE ? 'DEMO MODE' : 'LIVE MODE') + '\n\nNote: Live mode requires API endpoints to be implemented.')) {
-        window.location.reload();
-    }
-}
-
-// =============================================
-// AUTO-REFRESH & INITIALIZATION
-// =============================================
-
-let refreshInterval;
-
-function initDashboard() {
-    // Load all data
-    fetchActiveAlerts();
-    fetchRestroomStatus();
-    fetchIncidents();
-    fetchPendingChecklists();
-    fetchMaintenanceLogs();
-    fetchAirQualityChart();
-    updateStatsFromData();
-    
-    // Auto-refresh every 30 seconds (only active alerts and restroom status)
-    if (!USE_DEMO_MODE) {
-        refreshInterval = setInterval(() => {
-            fetchActiveAlerts();
-            fetchRestroomStatus();
-            fetchIncidents();
-        }, 30000);
-    }
-}
-
 function updateStatsFromData() {
-    // Update stat card numbers with demo data
     if (USE_DEMO_MODE) {
         document.getElementById('activeAlerts').textContent = DEMO_DATA.activeAlerts.length;
         document.getElementById('pendingChecklists').textContent = DEMO_DATA.checklists.length;
@@ -1283,19 +1498,60 @@ function updateStatsFromData() {
     }
 }
 
-// Start dashboard when page loads
+function toggleDemoMode() {
+    if (confirm('Toggle between Demo and Live mode?\n\nCurrently in: ' + (USE_DEMO_MODE ? 'DEMO MODE' : 'LIVE MODE') + '\n\nNote: Live mode requires API endpoints to be implemented.')) {
+        window.location.reload();
+    }
+}
+
+// =============================================
+// AUTO-REFRESH & INITIALIZATION
+// =============================================
+
+function initDashboard() {
+    fetchActiveAlerts();
+    fetchRestroomStatus();
+    fetchIncidents();
+    fetchPendingChecklists();
+    fetchMaintenanceLogs();
+    fetchAirQualityChart();
+    updateStatsFromData();
+    fetchNotificationCount();
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const wrapper = document.querySelector('.notification-wrapper');
+    if (wrapper && !wrapper.contains(event.target)) {
+        closeDropdown();
+    }
+});
+
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     initDashboard();
     
-    // Notification bell click handler
-    document.getElementById('notificationBell').addEventListener('click', () => {
-        if (USE_DEMO_MODE) {
-            alert('[DEMO] You have 3 unread notifications.\n\nIn live mode, this would show actual notifications.');
-        } else {
-            window.location.href = 'notifications.php';
-        }
-    });
+    // Notification bell click
+    const notificationBell = document.getElementById('notificationBell');
+    if (notificationBell) {
+        notificationBell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleDropdown();
+        });
+    }
+    
+    // Mark all read button
+    const markAllReadBtn = document.getElementById('markAllReadBtn');
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            markAllNotificationsRead();
+        });
+    }
+    
+    // Auto-refresh notification count every 15 seconds
+    setInterval(fetchNotificationCount, 15000);
 });
 </script>
 </body>
-</html> 
+</html>

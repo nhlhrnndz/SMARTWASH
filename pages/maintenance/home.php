@@ -14,6 +14,7 @@ requireRole(['maintenance']);
 $user = currentUser();
 $fullName = $user['full_name'];
 $username = $user['username'];
+$userId = $user['id'];
 
 // Get user initials for avatar
 $nameParts = explode(' ', $fullName);
@@ -219,7 +220,12 @@ if ($hour < 12) {
             gap: 1.5rem;
         }
 
-        /* Notification Bell */
+        /* Notification Wrapper & Dropdown */
+        .notification-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
         .notification-bell {
             position: relative;
             cursor: pointer;
@@ -258,6 +264,113 @@ if ($hour < 12) {
             border-radius: 20px;
             min-width: 18px;
             text-align: center;
+            display: none;
+        }
+
+        .notification-dropdown {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 380px;
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            max-height: 450px;
+            overflow-y: auto;
+        }
+
+        .dropdown-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--gray-border);
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--white);
+        }
+
+        .mark-all-read {
+            background: none;
+            border: none;
+            color: var(--red-deep);
+            font-size: 0.7rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .mark-all-read:hover {
+            text-decoration: underline;
+        }
+
+        .dropdown-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--gray-border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: var(--light);
+        }
+
+        .dropdown-item.unread {
+            background: rgba(197,0,0,0.03);
+            border-left: 3px solid var(--red-deep);
+        }
+
+        .dropdown-item-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .dropdown-item-message {
+            font-size: 0.75rem;
+            color: var(--text-mid);
+            margin-bottom: 0.2rem;
+            line-height: 1.4;
+        }
+
+        .dropdown-item-time {
+            font-size: 0.65rem;
+            color: var(--text-mid);
+            opacity: 0.6;
+            margin-top: 0.3rem;
+        }
+
+        .dropdown-footer {
+            padding: 10px 15px;
+            border-top: 1px solid var(--gray-border);
+            text-align: center;
+            position: sticky;
+            bottom: 0;
+            background: var(--white);
+        }
+
+        .dropdown-footer a {
+            color: var(--red-deep);
+            text-decoration: none;
+            font-size: 0.75rem;
+        }
+
+        .dropdown-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .dropdown-loading {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-mid);
+        }
+
+        .empty-notifications {
+            padding: 30px;
+            text-align: center;
+            color: var(--text-mid);
+            opacity: 0.6;
         }
 
         .logout-btn {
@@ -714,6 +827,12 @@ if ($hour < 12) {
             font-size: 0.8rem;
         }
 
+        .loading {
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--text-mid);
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .dashboard-grid {
@@ -740,6 +859,10 @@ if ($hour < 12) {
             }
             .quick-actions {
                 flex-direction: column;
+            }
+            .notification-dropdown {
+                width: 320px;
+                right: -60px;
             }
         }
     </style>
@@ -771,7 +894,7 @@ if ($hour < 12) {
             </div>
             <div class="nav-item"><a href="restroom_status.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>My Restrooms</a></div>
             <div class="nav-item"><a href="checklist.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h6a1 1 0 100-2H7zm0 4a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>Checklist</a></div>
-            <div class="nav-item"><a href="submissions.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>My Submissions</a></div>
+            <div class="nav-item"><a href="submissions.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>Submissions</a></div>
             <div class="nav-item"><a href="notifications.php" class="nav-link"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>Notifications</a></div>
         </nav>
     </aside>
@@ -784,23 +907,41 @@ if ($hour < 12) {
                 <p>Your assigned restrooms and daily tasks</p>
             </div>
             <div class="top-bar-right">
-                <div class="notification-bell" id="notificationBell">
-                    <div class="bell-icon">
-                        <svg viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
-                        </svg>
+                <!-- Notification Bell with Dropdown -->
+                <div class="notification-wrapper">
+                    <div class="notification-bell" id="notificationBell">
+                        <div class="bell-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
+                            </svg>
+                        </div>
+                        <span class="notification-badge" id="notificationBadge">0</span>
                     </div>
-                    <span class="notification-badge" id="notificationCount">0</span>
+                    
+                    <!-- Dropdown -->
+                    <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
+                        <div class="dropdown-header">
+                            <span>🔔 Notifications</span>
+                            <button id="markAllReadBtn" class="mark-all-read">Mark all read</button>
+                        </div>
+                        <div id="dropdownNotificationsList">
+                            <div class="dropdown-loading">Loading notifications...</div>
+                        </div>
+                        <div class="dropdown-footer">
+                            <a href="notifications.php">View all notifications →</a>
+                        </div>
+                    </div>
                 </div>
+
                 <form method="POST" action="../../auth/logout.php" style="margin:0;">
                     <button type="submit" class="logout-btn">Logout</button>
                 </form>
                 <div class="user-menu">
                     <div class="user-info">
-                        <div class="user-name" id="userName"><?php echo htmlspecialchars($fullName); ?></div>
+                        <div class="user-name"><?php echo htmlspecialchars($fullName); ?></div>
                         <div class="user-role">Maintenance Staff</div>
                     </div>
-                    <div class="user-avatar" id="userAvatar"><?php echo htmlspecialchars($initials); ?></div>
+                    <div class="user-avatar"><?php echo htmlspecialchars($initials); ?></div>
                 </div>
             </div>
         </div>
@@ -859,7 +1000,7 @@ if ($hour < 12) {
                     <a href="notifications.php">View All →</a>
                 </div>
                 <div class="card-body" id="activeTasksList">
-                    <div class="empty-state">Loading tasks...</div>
+                    <div class="loading">Loading tasks...</div>
                 </div>
             </div>
 
@@ -870,7 +1011,7 @@ if ($hour < 12) {
                     <a href="restroom_status.php">View All →</a>
                 </div>
                 <div class="card-body" id="assignedRestroomsList">
-                    <div class="empty-state">Loading restrooms...</div>
+                    <div class="loading">Loading restrooms...</div>
                 </div>
             </div>
 
@@ -881,7 +1022,7 @@ if ($hour < 12) {
                     <a href="checklist.php">View All →</a>
                 </div>
                 <div class="card-body" id="checklistList">
-                    <div class="empty-state">Loading checklists...</div>
+                    <div class="loading">Loading checklists...</div>
                 </div>
             </div>
 
@@ -893,7 +1034,7 @@ if ($hour < 12) {
                 </div>
                 <div class="card-body">
                     <div class="quick-actions">
-                        <div class="quick-btn" onclick="startChecklist()">
+                        <div class="quick-btn" onclick="window.location.href='checklist.php'">
                             <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/></svg>
                             <span>New Checklist</span>
                         </div>
@@ -901,9 +1042,9 @@ if ($hour < 12) {
                             <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
                             <span>Report Issue</span>
                         </div>
-                        <div class="quick-btn" onclick="markAllComplete()">
-                            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                            <span>Mark Complete</span>
+                        <div class="quick-btn" onclick="window.location.href='restroom_status.php'">
+                            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                            <span>View Restrooms</span>
                         </div>
                     </div>
                 </div>
@@ -916,7 +1057,7 @@ if ($hour < 12) {
                     <a href="submissions.php">View History →</a>
                 </div>
                 <div class="card-body" id="recentActivityList">
-                    <div class="empty-state">Loading activity...</div>
+                    <div class="loading">Loading activity...</div>
                 </div>
             </div>
         </div>
@@ -927,57 +1068,169 @@ if ($hour < 12) {
 // =============================================
 // CONFIGURATION
 // =============================================
-const USE_DEMO_MODE = true;  // Set to false when API is ready
+const USE_DEMO_MODE = false;  // Set to false to use real API
 const API_BASE = '../../api/';
-const USER_ID = <?php echo json_encode($user['id']); ?>;
+const USER_ID = <?php echo json_encode($userId); ?>;
 
 // =============================================
-// DEMO DATA (Replace with API calls when production ready)
+// FETCH FUNCTIONS (Real API Calls)
 // =============================================
-const DEMO_DATA = {
-    assignedRestrooms: [
-        { id: 1, name: 'GLR1 - Ground Left', soap_level: 85, air_quality: 32, has_alert: false },
-        { id: 2, name: 'GLR2 - Ground Right', soap_level: 45, air_quality: 28, has_alert: true, alert_type: 'vape' },
-        { id: 3, name: '1F-FR - 1st Floor Front', soap_level: 12, air_quality: 55, has_alert: true, alert_type: 'soap_low' },
-        { id: 4, name: '1F-RR - 1st Floor Rear', soap_level: 92, air_quality: 25, has_alert: false },
-        { id: 5, name: '2F-MR - 2nd Floor Main', soap_level: 67, air_quality: 85, has_alert: true, alert_type: 'air_quality' }
-    ],
+
+// Fetch assigned restrooms for this maintenance staff
+async function fetchAssignedRestrooms() {
+    const container = document.getElementById('assignedRestroomsList');
+    container.innerHTML = '<div class="loading">Loading restrooms...</div>';
     
-    activeTasks: [
-        { id: 1, title: 'Soap Level Low', location: '1F-FR - 1st Floor Front', priority: 'high', time: '30 min ago', action: 'Refill Soap' },
-        { id: 2, title: 'Air Quality Poor', location: '2F-MR - 2nd Floor Main', priority: 'high', time: '1 hour ago', action: 'Check Ventilation' },
-        { id: 3, title: 'Vape Detected', location: 'GLR2 - Ground Right', priority: 'high', time: '2 hours ago', action: 'Inspect Area' },
-        { id: 4, title: 'Routine Cleaning', location: 'GLR1 - Ground Left', priority: 'medium', time: 'Due today', action: 'Start Cleaning' }
-    ],
+    try {
+        const response = await fetch(`${API_BASE}get_assigned_restrooms.php?user_id=${USER_ID}`);
+        const result = await response.json();
+        
+        if (result.success && result.data.length > 0) {
+            displayAssignedRestrooms(result.data);
+            document.getElementById('assignedCount').textContent = result.data.length;
+        } else {
+            container.innerHTML = '<div class="empty-state">No restrooms assigned yet.</div>';
+            document.getElementById('assignedCount').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error fetching restrooms:', error);
+        container.innerHTML = '<div class="empty-state">Error loading restrooms</div>';
+    }
+}
+
+// Fetch pending checklists for today
+async function fetchPendingChecklists() {
+    const container = document.getElementById('checklistList');
+    container.innerHTML = '<div class="loading">Loading checklists...</div>';
     
-    checklists: [
-        { id: 1, restroom_name: 'GLR1 - Ground Left', due_date: '2026-04-24', status: 'pending' },
-        { id: 2, restroom_name: 'GLR2 - Ground Right', due_date: '2026-04-24', status: 'pending' },
-        { id: 3, restroom_name: '1F-FR - 1st Floor Front', due_date: '2026-04-23', status: 'completed' },
-        { id: 4, restroom_name: '1F-RR - 1st Floor Rear', due_date: '2026-04-24', status: 'pending' }
-    ],
+    try {
+        const response = await fetch(`${API_BASE}get_user_checklists.php?user_id=${USER_ID}&status=pending`);
+        const result = await response.json();
+        
+        if (result.success && result.data.length > 0) {
+            displayChecklists(result.data);
+            document.getElementById('pendingChecklists').textContent = result.data.length;
+        } else {
+            container.innerHTML = '<div class="empty-state">✅ All checklists completed for today!</div>';
+            document.getElementById('pendingChecklists').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error fetching checklists:', error);
+        container.innerHTML = '<div class="empty-state">Error loading checklists</div>';
+    }
+}
+
+// Fetch recent activity logs
+async function fetchRecentActivity() {
+    const container = document.getElementById('recentActivityList');
+    container.innerHTML = '<div class="loading">Loading activity...</div>';
     
-    recentActivity: [
-        { action: 'Completed checklist for 1F-RR', timestamp: '2026-04-24 09:30:00' },
-        { action: 'Refilled soap at GLR1', timestamp: '2026-04-24 08:45:00' },
-        { action: 'Reported vape incident at GLR2', timestamp: '2026-04-24 08:15:00' },
-        { action: 'Cleaned 2F-MR restroom', timestamp: '2026-04-23 16:30:00' }
-    ]
-};
+    try {
+        const response = await fetch(`${API_BASE}get_user_logs.php?user_id=${USER_ID}&limit=5`);
+        const result = await response.json();
+        
+        if (result.success && result.data.length > 0) {
+            displayRecentActivity(result.data);
+            // Calculate completed today
+            const today = new Date().toDateString();
+            const completedToday = result.data.filter(log => {
+                const logDate = new Date(log.performed_at).toDateString();
+                return logDate === today && log.action.includes('completed');
+            }).length;
+            document.getElementById('completedToday').textContent = completedToday;
+        } else {
+            container.innerHTML = '<div class="empty-state">No recent activity.</div>';
+        }
+    } catch (error) {
+        console.error('Error fetching activity:', error);
+        container.innerHTML = '<div class="empty-state">Error loading activity</div>';
+    }
+}
+
+// Fetch active tasks (alerts for assigned restrooms)
+async function fetchActiveTasks() {
+    const container = document.getElementById('activeTasksList');
+    container.innerHTML = '<div class="loading">Loading tasks...</div>';
+    
+    try {
+        const response = await fetch(`${API_BASE}get_user_tasks.php?user_id=${USER_ID}`);
+        const result = await response.json();
+        
+        if (result.success && result.data.length > 0) {
+            displayActiveTasks(result.data);
+            document.getElementById('pendingTasks').textContent = result.data.length;
+            document.getElementById('taskCountSummary').textContent = result.data.length;
+        } else {
+            container.innerHTML = '<div class="empty-state">✅ No active tasks. Great job!</div>';
+            document.getElementById('pendingTasks').textContent = '0';
+            document.getElementById('taskCountSummary').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error fetching tasks:', error);
+        container.innerHTML = '<div class="empty-state">Error loading tasks</div>';
+    }
+}
 
 // =============================================
 // DISPLAY FUNCTIONS
 // =============================================
 
-function displayActiveTasks() {
+function displayAssignedRestrooms(restrooms) {
+    const container = document.getElementById('assignedRestroomsList');
+    
+    container.innerHTML = `
+        <div class="restrooms-grid">
+            ${restrooms.map(restroom => `
+                <div class="restroom-card ${restroom.has_alert ? 'alert' : ''}">
+                    <div class="restroom-name">${escapeHtml(restroom.name)}</div>
+                    <div class="restroom-stats">
+                        <div class="stat-indicator">
+                            <div class="stat-dot ${getSoapStatus(restroom.soap_level)}"></div>
+                            <span>🧴 ${restroom.soap_level || 0}%</span>
+                        </div>
+                        <div class="stat-indicator">
+                            <div class="stat-dot ${getAirStatus(restroom.air_quality)}"></div>
+                            <span>🌬️ ${restroom.air_quality || 0}</span>
+                        </div>
+                        ${restroom.has_alert ? `<span class="stat-indicator" style="color: var(--red-deep);">⚠️</span>` : ''}
+                    </div>
+                    <button class="restroom-action-btn" onclick="window.location.href='restroom_status.php?id=${restroom.id}'">View Details →</button>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function displayChecklists(checklists) {
+    const container = document.getElementById('checklistList');
+    
+    container.innerHTML = checklists.map(checklist => `
+        <div class="checklist-item">
+            <div class="checklist-info">
+                <div class="checklist-restroom">${escapeHtml(checklist.restroom_name)}</div>
+                <div class="checklist-due">Due: ${formatDate(checklist.due_date)}</div>
+            </div>
+            <span class="checklist-status pending">Pending</span>
+            <button class="btn-checklist" onclick="window.location.href='checklist.php?id=${checklist.id}'">Start →</button>
+        </div>
+    `).join('');
+}
+
+function displayRecentActivity(logs) {
+    const container = document.getElementById('recentActivityList');
+    
+    container.innerHTML = logs.map(log => `
+        <div class="activity-item">
+            <div>${getActionIcon(log.action)} ${escapeHtml(log.action)} - ${escapeHtml(log.restroom_name)}</div>
+            <div class="activity-time">${formatTime(log.performed_at)}</div>
+        </div>
+    `).join('');
+}
+
+function displayActiveTasks(tasks) {
     const container = document.getElementById('activeTasksList');
     
-    if (!DEMO_DATA.activeTasks.length) {
-        container.innerHTML = '<div class="empty-state">✅ No active tasks. Great job!</div>';
-        return;
-    }
-    
-    container.innerHTML = DEMO_DATA.activeTasks.map(task => `
+    container.innerHTML = tasks.map(task => `
         <div class="task-item">
             <div class="task-info">
                 <div class="task-priority ${task.priority}"></div>
@@ -992,174 +1245,150 @@ function displayActiveTasks() {
     `).join('');
 }
 
-function displayAssignedRestrooms() {
-    const container = document.getElementById('assignedRestroomsList');
-    
-    if (!DEMO_DATA.assignedRestrooms.length) {
-        container.innerHTML = '<div class="empty-state">No restrooms assigned yet.</div>';
-        return;
-    }
-    
-    container.innerHTML = `
-        <div class="restrooms-grid">
-            ${DEMO_DATA.assignedRestrooms.map(restroom => `
-                <div class="restroom-card ${restroom.has_alert ? 'alert' : ''}">
-                    <div class="restroom-name">${escapeHtml(restroom.name)}</div>
-                    <div class="restroom-stats">
-                        <div class="stat-indicator">
-                            <div class="stat-dot ${getSoapStatus(restroom.soap_level)}"></div>
-                            <span>🧴 ${restroom.soap_level}%</span>
-                        </div>
-                        <div class="stat-indicator">
-                            <div class="stat-dot ${getAirStatus(restroom.air_quality)}"></div>
-                            <span>🌬️ ${restroom.air_quality}</span>
-                        </div>
-                        ${restroom.has_alert ? `<span class="stat-indicator" style="color: var(--red-deep);">⚠️</span>` : ''}
-                    </div>
-                    <button class="restroom-action-btn" onclick="viewRestroom(${restroom.id})">View Details →</button>
-                </div>
-            `).join('')}
-        </div>
-    `;
-}
-
-function displayChecklists() {
-    const container = document.getElementById('checklistList');
-    const pendingChecklists = DEMO_DATA.checklists.filter(c => c.status === 'pending');
-    
-    if (!pendingChecklists.length) {
-        container.innerHTML = '<div class="empty-state">✅ All checklists completed for today!</div>';
-        return;
-    }
-    
-    container.innerHTML = pendingChecklists.map(checklist => `
-        <div class="checklist-item">
-            <div class="checklist-info">
-                <div class="checklist-restroom">${escapeHtml(checklist.restroom_name)}</div>
-                <div class="checklist-due">Due: ${formatDate(checklist.due_date)}</div>
-            </div>
-            <span class="checklist-status pending">Pending</span>
-            <button class="btn-checklist" onclick="startChecklistForRestroom(${checklist.id})">Start →</button>
-        </div>
-    `).join('');
-}
-
-function displayRecentActivity() {
-    const container = document.getElementById('recentActivityList');
-    
-    if (!DEMO_DATA.recentActivity.length) {
-        container.innerHTML = '<div class="empty-state">No recent activity.</div>';
-        return;
-    }
-    
-    container.innerHTML = DEMO_DATA.recentActivity.map(activity => `
-        <div class="activity-item">
-            <div>${escapeHtml(activity.action)}</div>
-            <div class="activity-time">${formatTime(activity.timestamp)}</div>
-        </div>
-    `).join('');
-}
-
 // =============================================
 // ACTION HANDLERS
 // =============================================
 
 function handleTaskAction(action, taskId) {
-    if (USE_DEMO_MODE) {
-        alert(`[DEMO] ${action} for task #${taskId}\n\nIn live mode, this would update the database.`);
-        // Simulate removal
-        const taskIndex = DEMO_DATA.activeTasks.findIndex(t => t.id === taskId);
-        if (taskIndex !== -1) {
-            DEMO_DATA.activeTasks.splice(taskIndex, 1);
-            displayActiveTasks();
-            updateStats();
-        }
-    } else {
-        // TODO: Call API endpoint when ready
-        // fetch(`${API_BASE}resolve_task.php`, { method: 'POST', body: JSON.stringify({ task_id: taskId }) })
-    }
-}
-
-function viewRestroom(restroomId) {
-    if (USE_DEMO_MODE) {
-        alert(`[DEMO] Viewing details for restroom #${restroomId}\n\nIn live mode, this would show detailed sensor data.`);
-    } else {
-        window.location.href = `restroom_status.php?id=${restroomId}`;
-    }
-}
-
-function startChecklist() {
-    if (USE_DEMO_MODE) {
-        alert('[DEMO] Starting new checklist\n\nIn live mode, this would open the checklist form.');
-    } else {
-        window.location.href = 'checklist.php';
-    }
-}
-
-function startChecklistForRestroom(checklistId) {
-    if (USE_DEMO_MODE) {
-        alert(`[DEMO] Starting checklist #${checklistId}\n\nIn live mode, this would open the evaluation form.`);
-        // Mark as completed in demo
-        const checklist = DEMO_DATA.checklists.find(c => c.id === checklistId);
-        if (checklist) {
-            checklist.status = 'completed';
-            displayChecklists();
-            updateStats();
-            // Add to activity
-            DEMO_DATA.recentActivity.unshift({
-                action: `Completed checklist for ${checklist.restroom_name}`,
-                timestamp: new Date().toISOString()
-            });
-            displayRecentActivity();
-        }
+    if (confirm(`Perform "${action}" for this task?`)) {
+        alert(`[Action] ${action} for task #${taskId}\n\nThis will be connected to the API in production.`);
+        // In production, call API to resolve task
+        fetchActiveTasks(); // Refresh
     }
 }
 
 function reportIssue() {
-    if (USE_DEMO_MODE) {
-        const issue = prompt('[DEMO] Describe the issue you want to report:');
-        if (issue) {
-            alert(`[DEMO] Issue reported: "${issue}"\n\nYour supervisor has been notified.`);
-            DEMO_DATA.recentActivity.unshift({
-                action: `Reported issue: ${issue.substring(0, 50)}...`,
-                timestamp: new Date().toISOString()
-            });
-            displayRecentActivity();
-        }
+    const issue = prompt('Describe the issue you want to report:');
+    if (issue) {
+        alert(`Issue reported: "${issue}"\n\nYour supervisor has been notified.`);
+        // In production, call API to create alert
     }
 }
 
-function markAllComplete() {
-    if (USE_DEMO_MODE) {
-        if (confirm('[DEMO] Mark all tasks as complete?')) {
-            DEMO_DATA.activeTasks = [];
-            DEMO_DATA.checklists.forEach(c => { if (c.status === 'pending') c.status = 'completed'; });
-            displayActiveTasks();
-            displayChecklists();
-            updateStats();
-            alert('[DEMO] All tasks marked as complete! Great work!');
+// =============================================
+// NOTIFICATION FUNCTIONS
+// =============================================
+
+let isDropdownOpen = false;
+
+async function fetchNotificationCount() {
+    try {
+        const response = await fetch(API_BASE + 'get_notifications.php?unread_only=true');
+        const result = await response.json();
+        
+        if (result.success) {
+            const badge = document.getElementById('notificationBadge');
+            if (result.data.unread_count > 0) {
+                badge.textContent = result.data.unread_count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
         }
+    } catch (error) {
+        console.error('Error fetching notification count:', error);
+    }
+}
+
+async function loadNotificationDropdown() {
+    const container = document.getElementById('dropdownNotificationsList');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="dropdown-loading">📬 Loading notifications...</div>';
+    
+    try {
+        const response = await fetch(API_BASE + 'get_notifications.php?limit=10');
+        const result = await response.json();
+        
+        if (result.success && result.data.notifications.length > 0) {
+            const notifications = result.data.notifications;
+            
+            container.innerHTML = notifications.map(n => `
+                <div class="dropdown-item ${!n.is_read ? 'unread' : ''}" onclick="handleNotificationClick(${n.id})">
+                    <div class="dropdown-item-title">${getNotificationIcon(n.title)} ${escapeHtml(n.title)}</div>
+                    <div class="dropdown-item-message">${escapeHtml(n.message.length > 80 ? n.message.substring(0, 80) + '...' : n.message)}</div>
+                    <div class="dropdown-item-time">${formatTime(n.created_at)}</div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<div class="empty-notifications">📭 No notifications yet</div>';
+        }
+    } catch (error) {
+        console.error('Error loading dropdown:', error);
+        container.innerHTML = '<div class="empty-notifications">⚠️ Error loading notifications</div>';
+    }
+}
+
+function getNotificationIcon(title) {
+    if (title.includes('Approved')) return '✅';
+    if (title.includes('Flagged')) return '⚠️';
+    if (title.includes('Assigned')) return '📋';
+    return '🔔';
+}
+
+async function handleNotificationClick(id) {
+    try {
+        await fetch(API_BASE + 'mark_notification_read.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notification_id: id })
+        });
+    } catch (error) {
+        console.error('Error marking notification read:', error);
+    }
+    window.location.href = 'notifications.php';
+}
+
+async function markAllNotificationsRead() {
+    try {
+        const response = await fetch(API_BASE + 'get_notifications.php?limit=100');
+        const result = await response.json();
+        
+        if (result.success && result.data.notifications.length > 0) {
+            for (const n of result.data.notifications) {
+                if (!n.is_read) {
+                    await fetch(API_BASE + 'mark_notification_read.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ notification_id: n.id })
+                    });
+                }
+            }
+        }
+        
+        loadNotificationDropdown();
+        fetchNotificationCount();
+        closeDropdown();
+    } catch (error) {
+        console.error('Error marking all read:', error);
+    }
+}
+
+function toggleDropdown() {
+    const dropdown = document.getElementById('notificationDropdown');
+    if (!dropdown) return;
+    
+    if (isDropdownOpen) {
+        dropdown.style.display = 'none';
+        isDropdownOpen = false;
+    } else {
+        loadNotificationDropdown();
+        dropdown.style.display = 'block';
+        isDropdownOpen = true;
+    }
+}
+
+function closeDropdown() {
+    const dropdown = document.getElementById('notificationDropdown');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+        isDropdownOpen = false;
     }
 }
 
 // =============================================
 // HELPER FUNCTIONS
 // =============================================
-
-function updateStats() {
-    document.getElementById('assignedCount').textContent = DEMO_DATA.assignedRestrooms.length;
-    document.getElementById('pendingTasks').textContent = DEMO_DATA.activeTasks.length;
-    document.getElementById('pendingChecklists').textContent = DEMO_DATA.checklists.filter(c => c.status === 'pending').length;
-    document.getElementById('taskCountSummary').textContent = DEMO_DATA.activeTasks.length;
-    
-    // Calculate completed today (simulated)
-    const todayStr = new Date().toDateString();
-    const completedToday = DEMO_DATA.recentActivity.filter(a => {
-        const activityDate = new Date(a.timestamp).toDateString();
-        return activityDate === todayStr;
-    }).length;
-    document.getElementById('completedToday').textContent = completedToday;
-}
 
 function escapeHtml(str) {
     if (!str) return '';
@@ -1200,6 +1429,17 @@ function getAirStatus(aqi) {
     return 'good';
 }
 
+function getActionIcon(action) {
+    const icons = {
+        'submitted_checklist': '📋',
+        'checklist_approved': '✅',
+        'checklist_flagged': '⚠️',
+        'soap_refilled': '🧴',
+        'cleaned': '🧹'
+    };
+    return icons[action] || '📝';
+}
+
 function setCurrentDate() {
     const dateElement = document.getElementById('currentDate');
     const now = new Date();
@@ -1208,42 +1448,53 @@ function setCurrentDate() {
 }
 
 // =============================================
-// NOTIFICATION FUNCTIONS
-// =============================================
-
-function fetchNotificationCount() {
-    if (USE_DEMO_MODE) {
-        document.getElementById('notificationCount').textContent = DEMO_DATA.activeTasks.length;
-    } else {
-        // TODO: Fetch from API
-        // fetch(`${API_BASE}get_notifications.php?user_id=${USER_ID}`)
-    }
-}
-
-// =============================================
 // INITIALIZATION
 // =============================================
 
 function initDashboard() {
     setCurrentDate();
-    displayActiveTasks();
-    displayAssignedRestrooms();
-    displayChecklists();
-    displayRecentActivity();
-    updateStats();
+    fetchAssignedRestrooms();
+    fetchPendingChecklists();
+    fetchRecentActivity();
+    fetchActiveTasks();
     fetchNotificationCount();
 }
 
-// Start dashboard when page loads
-document.addEventListener('DOMContentLoaded', initDashboard);
-
-// Notification bell click
-document.getElementById('notificationBell').addEventListener('click', () => {
-    if (USE_DEMO_MODE) {
-        alert(`[DEMO] You have ${DEMO_DATA.activeTasks.length} unread notifications.\n\nIn live mode, this would show actual notifications.`);
-    } else {
-        window.location.href = 'notifications.php';
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const wrapper = document.querySelector('.notification-wrapper');
+    if (wrapper && !wrapper.contains(event.target)) {
+        closeDropdown();
     }
+});
+
+// Start dashboard when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    initDashboard();
+    
+    // Notification bell click
+    const notificationBell = document.getElementById('notificationBell');
+    if (notificationBell) {
+        notificationBell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleDropdown();
+        });
+    }
+    
+    // Mark all read button
+    const markAllReadBtn = document.getElementById('markAllReadBtn');
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            markAllNotificationsRead();
+        });
+    }
+    
+    // Auto-refresh every 15 seconds
+    setInterval(() => {
+        fetchNotificationCount();
+        fetchActiveTasks();
+    }, 15000);
 });
 </script>
 </body>
