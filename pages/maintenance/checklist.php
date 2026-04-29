@@ -15,6 +15,12 @@ if (strlen($initials) < 2 && strlen($fullName) > 0) {
     $initials = strtoupper(substr($fullName, 0, 2));
 }
 $current_page = basename($_SERVER['PHP_SELF']);
+
+// Fetch restrooms from database
+require_once '../../config/db.php';
+$pdo = getDB();
+$stmt = $pdo->query("SELECT id, name FROM restrooms WHERE status = 'active' ORDER BY name");
+$restrooms = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -89,7 +95,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         .page-title h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 700; }
         .page-title p { font-size: 0.8rem; color: var(--text-mid); opacity: 0.7; }
         .top-bar-right { display: flex; align-items: center; gap: 1.5rem; }
-        .logout-btn { background: none; border: 1px solid var(--gray-border); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.75rem; }
+        .logout-btn { background: none; border: 1px solid var(--gray-border); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.75rem; transition: all 0.2s; }
         .logout-btn:hover { background: var(--red-deep); border-color: var(--red-deep); color: var(--white); }
         .user-menu { display: flex; align-items: center; gap: 1rem; }
         .user-avatar { width: 44px; height: 44px; background: linear-gradient(135deg, var(--red-deep), var(--red-vivid)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--white); font-weight: 700; font-size: 1.1rem; }
@@ -104,12 +110,30 @@ $current_page = basename($_SERVER['PHP_SELF']);
         .form-group { margin-bottom: 1.2rem; }
         label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-mid); }
         select, textarea { width: 100%; padding: 0.7rem; border: 1px solid var(--gray-border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; background: var(--white); }
+        select:focus, textarea:focus { outline: none; border-color: var(--red-deep); box-shadow: 0 0 0 3px rgba(197,0,0,0.1); }
         .rating-group { display: flex; gap: 1rem; flex-wrap: wrap; }
-        .rating-option { display: flex; align-items: center; gap: 0.5rem; }
-        .rating-option input { width: 18px; height: 18px; }
-        .btn-submit { background: var(--red-deep); color: var(--white); border: none; padding: 0.8rem 1.5rem; border-radius: 10px; font-weight: 700; cursor: pointer; width: 100%; font-size: 1rem; }
-        .btn-submit:hover { background: var(--red-vivid); }
-        .empty-state { text-align: center; padding: 3rem; color: var(--text-mid); opacity: 0.6; }
+        .rating-option { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+        .rating-option input { width: 18px; height: 18px; cursor: pointer; }
+        .btn-submit { background: var(--red-deep); color: var(--white); border: none; padding: 0.8rem 1.5rem; border-radius: 10px; font-weight: 700; cursor: pointer; width: 100%; font-size: 1rem; transition: all 0.2s; }
+        .btn-submit:hover { background: var(--red-vivid); transform: translateY(-1px); }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        .toast.success { background: var(--green-success); }
+        .toast.error { background: var(--red-deep); }
+        .toast.info { background: #1565C0; }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -146,18 +170,18 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <div class="checklist-sub">Complete this form after inspecting each assigned restroom</div>
             </div>
             
-            <form id="checklistForm" onsubmit="event.preventDefault(); alert('Checklist submitted! (Demo mode - will connect to API in future)'); this.reset();">
+            <form id="checklistForm">
                 <div class="form-group">
-                    <label>Select Restroom *</label>
-                    <select required>
-                        <option value="">-- Select Restroom --</option>
-                        <option>GLR1 - Ground Left</option>
-                        <option>GLR2 - Ground Right</option>
-                        <option>1F-FR - 1st Floor Front</option>
-                        <option>1F-RR - 1st Floor Rear</option>
-                        <option>2F-MR - 2nd Floor Main</option>
-                    </select>
-                </div>
+    <label>Select Restroom *</label>
+    <select id="restroomSelect" required>
+        <option value="">-- Select Restroom --</option>
+        <?php foreach ($restrooms as $restroom): ?>
+            <option value="<?php echo $restroom['id']; ?>">
+                <?php echo htmlspecialchars($restroom['name']); ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+</div>
                 
                 <div class="form-group">
                     <label>Toilet Cleanliness</label>
@@ -220,14 +244,126 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </div>
                 
                 <div class="form-group">
-                    <label>Additional Notes / Issues Found</label>
-                    <textarea rows="3" placeholder="Describe any issues, damages, or special concerns..."></textarea>
+                    <label>Odor Free</label>
+                    <div class="rating-group">
+                        <label class="rating-option"><input type="radio" name="odor" value="yes"> Yes, odor free</label>
+                        <label class="rating-option"><input type="radio" name="odor" value="no"> No, there is odor</label>
+                    </div>
                 </div>
                 
-                <button type="submit" class="btn-submit">✓ Submit Checklist</button>
+                <div class="form-group">
+                    <label>Additional Notes / Issues Found</label>
+                    <textarea id="notes" rows="3" placeholder="Describe any issues, damages, or special concerns..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn-submit" id="submitBtn">✓ Submit Checklist</button>
             </form>
         </div>
     </main>
 </div>
+
+<script>
+// Get user ID from PHP
+const USER_ID = <?php echo json_encode($user['id']); ?>;
+
+// Helper function to show toast notifications
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Helper function to get selected radio value
+function getSelectedValue(name) {
+    const selected = document.querySelector(`input[name="${name}"]:checked`);
+    return selected ? selected.value : null;
+}
+
+// Form submission handler
+document.getElementById('checklistForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Get form data
+    const restroomSelect = document.getElementById('restroomSelect');
+    const restroomId = restroomSelect.value;
+    const restroomName = restroomSelect.options[restroomSelect.selectedIndex]?.text;
+    
+    if (!restroomId || restroomId === '') {
+        showToast('Please select a restroom', 'error');
+        return;
+    }
+    
+    // Get all ratings
+    const toilet = getSelectedValue('toilet');
+    const floor = getSelectedValue('floor');
+    const sink = getSelectedValue('sink');
+    const mirror = getSelectedValue('mirror');
+    const soap = getSelectedValue('soap');
+    const towel = getSelectedValue('towel');
+    const odor = getSelectedValue('odor');
+    
+    // Validate required fields
+    if (!toilet || !floor || !sink || !mirror || !soap || !towel || !odor) {
+        showToast('Please complete all rating fields before submitting', 'error');
+        return;
+    }
+    
+    // Convert to boolean (1/0)
+    const isExcellentOrGood = (value) => value === 'excellent' || value === 'good';
+    const isFull = (value) => value === 'full';
+    
+    const payload = {
+        user_id: USER_ID,
+        restroom_id: parseInt(restroomId),
+        floor_clean: isExcellentOrGood(floor) ? 1 : 0,
+        toilets_clean: isExcellentOrGood(toilet) ? 1 : 0,
+        sinks_clean: isExcellentOrGood(sink) ? 1 : 0,
+        mirrors_clean: isExcellentOrGood(mirror) ? 1 : 0,
+        soap_refilled: isFull(soap) ? 1 : 0,
+        trash_emptied: isFull(towel) ? 1 : 0,
+        odor_free: odor === 'yes' ? 1 : 0,
+        notes: document.getElementById('notes')?.value || ''
+    };
+    
+    console.log('Submitting payload:', payload);
+    
+    // Show loading state
+    const submitBtn = document.getElementById('submitBtn');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = '⏳ Submitting...';
+    submitBtn.disabled = true;
+    
+    try {
+        const response = await fetch('../../api/submit_checklist.php', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('✓ Checklist submitted successfully! Waiting for supervisor approval.', 'success');
+            document.getElementById('checklistForm').reset();
+        } else {
+            showToast('Error: ' + (result.error || 'Failed to submit checklist'), 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Network error. Failed to submit checklist. Please try again.', 'error');
+    } finally {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    }
+});
+</script>
 </body>
 </html>

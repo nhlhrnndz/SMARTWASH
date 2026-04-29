@@ -4,6 +4,7 @@ requireRole(['maintenance']);
 
 $user = currentUser();
 $fullName = $user['full_name'];
+$userId = $user['id'];
 $initials = '';
 $nameParts = explode(' ', $fullName);
 foreach ($nameParts as $part) {
@@ -36,12 +37,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
             --shadow: rgba(197,0,0,0.18);
             --green-success: #2e7d32;
             --yellow-warning: #f9a825;
+            --orange-critical: #f57c00;
             --gray-border: #e0d8c8;
+            --blue-info: #1565C0;
         }
         body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text-dark); }
         .dashboard-wrapper { display: flex; min-height: 100vh; }
         
-        /* Sidebar */
         .sidebar {
             width: 280px;
             background: var(--white);
@@ -72,13 +74,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
             font-size: 0.88rem;
             transition: all 0.2s;
         }
-        .nav-link svg { width: 20px; height: 20px; color: #aaa; transition: all 0.2s; }
+        .nav-link svg { width: 20px; height: 20px; color: #aaa; }
         .nav-link:hover { background: rgba(197,0,0,0.05); color: var(--red-deep); }
         .nav-link:hover svg { color: var(--red-deep); }
         .nav-link.active { background: var(--red-deep); color: var(--white); }
         .nav-link.active svg { color: var(--white); }
         
-        /* Main Content */
         .main-content { flex: 1; margin-left: 280px; padding: 1.5rem 2rem; }
         .top-bar {
             display: flex;
@@ -89,36 +90,170 @@ $current_page = basename($_SERVER['PHP_SELF']);
             padding: 1rem 1.5rem;
             border-radius: 16px;
         }
-        .page-title h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 700; color: var(--text-dark); }
+        .page-title h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 700; }
         .page-title p { font-size: 0.8rem; color: var(--text-mid); opacity: 0.7; }
         .top-bar-right { display: flex; align-items: center; gap: 1.5rem; }
-        .logout-btn { background: none; border: 1px solid var(--gray-border); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.75rem; transition: all 0.2s; }
+        .logout-btn { background: none; border: 1px solid var(--gray-border); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.75rem; }
         .logout-btn:hover { background: var(--red-deep); border-color: var(--red-deep); color: var(--white); }
-        .user-menu { display: flex; align-items: center; gap: 1rem; cursor: pointer; }
+        .user-menu { display: flex; align-items: center; gap: 1rem; }
         .user-avatar { width: 44px; height: 44px; background: linear-gradient(135deg, var(--red-deep), var(--red-vivid)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--white); font-weight: 700; font-size: 1.1rem; }
         .user-info { text-align: right; }
         .user-name { font-weight: 700; font-size: 0.88rem; }
         .user-role { font-size: 0.7rem; opacity: 0.6; }
         
+        /* Stats Card */
+        .stats-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--gray-border);
+            display: inline-block;
+        }
+        .stats-value { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 900; color: var(--red-deep); }
+        
         /* Restrooms Grid */
-        .restrooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem; }
-        .restroom-card { background: var(--white); border-radius: 16px; border: 1px solid var(--gray-border); overflow: hidden; transition: all 0.2s; }
-        .restroom-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px var(--shadow); }
-        .restroom-header { background: var(--light); padding: 1rem 1.5rem; border-bottom: 1px solid var(--gray-border); display: flex; justify-content: space-between; align-items: center; }
-        .restroom-name { font-weight: 700; font-size: 1.1rem; }
-        .alert-badge { background: var(--red-deep); color: var(--white); padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem; }
-        .restroom-body { padding: 1rem 1.5rem; }
-        .sensor-row { display: flex; justify-content: space-between; margin-bottom: 0.8rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--gray-border); }
-        .sensor-label { font-size: 0.75rem; color: var(--text-mid); opacity: 0.7; }
-        .sensor-value { font-weight: 600; font-size: 0.9rem; }
-        .status-good { color: var(--green-success); }
-        .status-warning { color: var(--yellow-warning); }
-        .status-critical { color: var(--red-deep); }
-        .action-buttons { display: flex; gap: 0.8rem; margin-top: 1rem; }
-        .btn { flex: 1; padding: 0.5rem; border-radius: 8px; font-size: 0.7rem; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; }
-        .btn-primary { background: var(--red-deep); color: var(--white); border: none; }
-        .btn-secondary { background: var(--light); color: var(--text-mid); border: 1px solid var(--gray-border); }
-        .empty-state { text-align: center; padding: 3rem; color: var(--text-mid); opacity: 0.6; }
+        .restrooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.2rem;
+        }
+        .restroom-card {
+            background: var(--white);
+            border-radius: 16px;
+            border: 1px solid var(--gray-border);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .restroom-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px var(--shadow);
+        }
+        .restroom-card.critical {
+            background: rgba(197,0,0,0.02);
+            border-left: 4px solid var(--red-deep);
+        }
+        .restroom-card.warning {
+            border-left: 4px solid var(--yellow-warning);
+        }
+        .restroom-header {
+            background: var(--light);
+            padding: 1rem 1.2rem;
+            border-bottom: 1px solid var(--gray-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .restroom-name {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        .restroom-location {
+            font-size: 0.7rem;
+            color: var(--text-mid);
+            opacity: 0.7;
+            margin-top: 0.2rem;
+        }
+        .restroom-gender {
+            background: var(--light);
+            padding: 0.2rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+        .restroom-gender.male { background: rgba(21,101,192,0.15); color: var(--blue-info); }
+        .restroom-gender.female { background: rgba(197,0,0,0.15); color: var(--red-deep); }
+        .restroom-gender.unisex { background: rgba(46,125,50,0.15); color: var(--green-success); }
+        
+        .restroom-body {
+            padding: 1rem 1.2rem;
+        }
+        .sensor-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--gray-border);
+        }
+        .sensor-row:last-child {
+            border-bottom: none;
+        }
+        .sensor-label {
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: var(--text-mid);
+        }
+        .sensor-value {
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+        .sensor-value.good { color: var(--green-success); }
+        .sensor-value.warning { color: var(--yellow-warning); }
+        .sensor-value.critical { color: var(--red-deep); }
+        
+        .progress-bar {
+            background: var(--light);
+            border-radius: 10px;
+            height: 6px;
+            overflow: hidden;
+            margin-top: 0.3rem;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+        .fill-good { background: var(--green-success); }
+        .fill-warning { background: var(--yellow-warning); }
+        .fill-critical { background: var(--red-deep); }
+        
+        .alert-badge {
+            background: rgba(197,0,0,0.15);
+            color: var(--red-deep);
+            padding: 0.2rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .btn-checklist {
+            background: var(--red-deep);
+            color: var(--white);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 0.8rem;
+            transition: all 0.2s;
+        }
+        .btn-checklist:hover {
+            background: var(--red-vivid);
+            transform: scale(1.02);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-mid);
+            opacity: 0.6;
+        }
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-mid);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .main-content { margin-left: 0; }
+            .restrooms-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -142,57 +277,168 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
     <main class="main-content">
         <div class="top-bar">
-            <div class="page-title"><h1>My Assigned Restrooms</h1><p>View real-time status of restrooms under your care</p></div>
+            <div class="page-title"><h1>My Assigned Restrooms</h1><p>Restrooms under your responsibility</p></div>
             <div class="top-bar-right">
-                <form method="POST" action="../../auth/logout.php" style="margin:0;"><button type="submit" class="logout-btn">Logout</button></form>
+                <form method="POST" action="../../auth/logout.php"><button type="submit" class="logout-btn">Logout</button></form>
                 <div class="user-menu"><div class="user-info"><div class="user-name"><?php echo htmlspecialchars($fullName); ?></div><div class="user-role">Maintenance Staff</div></div><div class="user-avatar"><?php echo htmlspecialchars($initials); ?></div></div>
             </div>
         </div>
-        
+
+        <div class="stats-card">
+            <span class="stats-value" id="restroomCount">0</span> Restrooms Assigned
+        </div>
+
         <div class="restrooms-grid" id="restroomsGrid">
-            <!-- Static demo data - will be replaced with API data -->
-            <div class="restroom-card">
-                <div class="restroom-header"><span class="restroom-name">GLR1 - Ground Left</span><span class="alert-badge" style="background: var(--green-success);">Normal</span></div>
-                <div class="restroom-body">
-                    <div class="sensor-row"><span class="sensor-label">🧴 Soap Level</span><span class="sensor-value status-good">85%</span></div>
-                    <div class="sensor-row"><span class="sensor-label">🌬️ Air Quality (AQI)</span><span class="sensor-value status-good">32 - Good</span></div>
-                    <div class="sensor-row"><span class="sensor-label">🚭 Vape Detected</span><span class="sensor-value status-good">No</span></div>
-                    <div class="sensor-row"><span class="sensor-label">📅 Last Cleaning</span><span class="sensor-value">2026-04-24 08:30 AM</span></div>
-                    <div class="action-buttons"><button class="btn btn-primary" onclick="alert('Start cleaning checklist for GLR1')">Start Checklist</button><button class="btn btn-secondary" onclick="alert('Report issue for GLR1')">Report Issue</button></div>
-                </div>
-            </div>
-            <div class="restroom-card">
-                <div class="restroom-header"><span class="restroom-name">GLR2 - Ground Right</span><span class="alert-badge" style="background: var(--yellow-warning);">Warning</span></div>
-                <div class="restroom-body">
-                    <div class="sensor-row"><span class="sensor-label">🧴 Soap Level</span><span class="sensor-value status-warning">45%</span></div>
-                    <div class="sensor-row"><span class="sensor-label">🌬️ Air Quality (AQI)</span><span class="sensor-value status-good">28 - Good</span></div>
-                    <div class="sensor-row"><span class="sensor-label">🚭 Vape Detected</span><span class="sensor-value status-critical">Yes - 2 hours ago</span></div>
-                    <div class="sensor-row"><span class="sensor-label">📅 Last Cleaning</span><span class="sensor-value">2026-04-23 02:00 PM</span></div>
-                    <div class="action-buttons"><button class="btn btn-primary" onclick="alert('Start cleaning checklist for GLR2')">Start Checklist</button><button class="btn btn-secondary" onclick="alert('Report issue for GLR2')">Report Issue</button></div>
-                </div>
-            </div>
-            <div class="restroom-card">
-                <div class="restroom-header"><span class="restroom-name">1F-FR - 1st Floor Front</span><span class="alert-badge" style="background: var(--red-deep);">Critical</span></div>
-                <div class="restroom-body">
-                    <div class="sensor-row"><span class="sensor-label">🧴 Soap Level</span><span class="sensor-value status-critical">12% - REFILL NEEDED</span></div>
-                    <div class="sensor-row"><span class="sensor-label">🌬️ Air Quality (AQI)</span><span class="sensor-value status-warning">55 - Moderate</span></div>
-                    <div class="sensor-row"><span class="sensor-label">🚭 Vape Detected</span><span class="sensor-value status-good">No</span></div>
-                    <div class="sensor-row"><span class="sensor-label">📅 Last Cleaning</span><span class="sensor-value">2026-04-23 11:00 AM</span></div>
-                    <div class="action-buttons"><button class="btn btn-primary" onclick="alert('Start cleaning checklist for 1F-FR')">Start Checklist</button><button class="btn btn-secondary" onclick="alert('Report issue for 1F-FR')">Report Issue</button></div>
-                </div>
-            </div>
-            <div class="restroom-card">
-                <div class="restroom-header"><span class="restroom-name">1F-RR - 1st Floor Rear</span><span class="alert-badge" style="background: var(--green-success);">Normal</span></div>
-                <div class="restroom-body">
-                    <div class="sensor-row"><span class="sensor-label">🧴 Soap Level</span><span class="sensor-value status-good">92%</span></div>
-                    <div class="sensor-row"><span class="sensor-label">🌬️ Air Quality (AQI)</span><span class="sensor-value status-good">25 - Good</span></div>
-                    <div class="sensor-row"><span class="sensor-label">🚭 Vape Detected</span><span class="sensor-value status-good">No</span></div>
-                    <div class="sensor-row"><span class="sensor-label">📅 Last Cleaning</span><span class="sensor-value">2026-04-24 09:30 AM</span></div>
-                    <div class="action-buttons"><button class="btn btn-primary" onclick="alert('Start cleaning checklist for 1F-RR')">Start Checklist</button><button class="btn btn-secondary" onclick="alert('Report issue for 1F-RR')">Report Issue</button></div>
-                </div>
-            </div>
+            <div class="loading">Loading assigned restrooms...</div>
         </div>
     </main>
 </div>
+
+<script>
+// =============================================
+// CONFIGURATION
+// =============================================
+const API_BASE = '../../api/';
+const USER_ID = <?php echo json_encode($userId); ?>;
+
+// =============================================
+// HELPER FUNCTIONS
+// =============================================
+function getSoapStatus(level) {
+    if (!level && level !== 0) return 'good';
+    if (level < 20) return 'critical';
+    if (level < 50) return 'warning';
+    return 'good';
+}
+
+function getAirStatus(aqi) {
+    if (!aqi && aqi !== 0) return 'good';
+    if (aqi > 70) return 'critical';
+    if (aqi > 40) return 'warning';
+    return 'good';
+}
+
+function getSoapFillClass(level) {
+    if (!level && level !== 0) return 'fill-good';
+    if (level < 20) return 'fill-critical';
+    if (level < 50) return 'fill-warning';
+    return 'fill-good';
+}
+
+function getCardStatus(hasAlert, soapLevel, airQuality) {
+    if (hasAlert) return 'critical';
+    if (soapLevel < 20 || airQuality > 70) return 'critical';
+    if (soapLevel < 50 || airQuality > 40) return 'warning';
+    return 'good';
+}
+
+function getGenderIcon(gender) {
+    switch(gender) {
+        case 'male': return '👨';
+        case 'female': return '👩';
+        default: return '👥';
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// =============================================
+// LOAD ASSIGNED RESTROOMS
+// =============================================
+async function loadAssignedRestrooms() {
+    const container = document.getElementById('restroomsGrid');
+    container.innerHTML = '<div class="loading">Loading assigned restrooms...</div>';
+    
+    try {
+        const response = await fetch(`${API_BASE}get_assigned_restrooms.php?user_id=${USER_ID}`);
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.length > 0) {
+            document.getElementById('restroomCount').textContent = result.data.length;
+            displayRestrooms(result.data);
+        } else {
+            container.innerHTML = '<div class="empty-state">🚻 No restrooms assigned yet.<br><br>Please contact your supervisor for assignment.</div>';
+            document.getElementById('restroomCount').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        container.innerHTML = '<div class="empty-state">Error loading restrooms. Please refresh the page.</div>';
+    }
+}
+
+// =============================================
+// DISPLAY RESTROOMS
+// =============================================
+function displayRestrooms(restrooms) {
+    const container = document.getElementById('restroomsGrid');
+    
+    container.innerHTML = restrooms.map(restroom => {
+        const soapLevel = restroom.soap_level ?? 100;
+        const airQuality = restroom.air_quality ?? 0;
+        const hasAlert = restroom.has_alert == 1;
+        const cardStatus = getCardStatus(hasAlert, soapLevel, airQuality);
+        
+        return `
+            <div class="restroom-card ${cardStatus}">
+                <div class="restroom-header">
+                    <div>
+                        <div class="restroom-name">${escapeHtml(restroom.name)}</div>
+                        <div class="restroom-location">📍 ${escapeHtml(restroom.location)}</div>
+                    </div>
+                    <span class="restroom-gender ${restroom.gender}">${getGenderIcon(restroom.gender)} ${escapeHtml(restroom.gender)}</span>
+                </div>
+                <div class="restroom-body">
+                    ${hasAlert ? `
+                        <div class="sensor-row">
+                            <span class="alert-badge">⚠️ Active Alert - Needs Attention</span>
+                        </div>
+                    ` : ''}
+                    <div class="sensor-row">
+                        <span class="sensor-label">🧴 Soap Level</span>
+                        <span class="sensor-value ${getSoapStatus(soapLevel)}">${soapLevel}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill ${getSoapFillClass(soapLevel)}" style="width: ${soapLevel}%"></div>
+                    </div>
+                    <div class="sensor-row">
+                        <span class="sensor-label">🌬️ Air Quality (AQI)</span>
+                        <span class="sensor-value ${getAirStatus(airQuality)}">${airQuality}</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill ${getSoapFillClass(airQuality > 70 ? 0 : (airQuality > 40 ? 50 : 100))}" style="width: ${Math.min(airQuality, 100)}%"></div>
+                    </div>
+                    <button class="btn-checklist" onclick="startChecklist(${restroom.id}, '${escapeHtml(restroom.name)}')">
+                        📋 Submit Checklist
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// =============================================
+// START CHECKLIST
+// =============================================
+function startChecklist(restroomId, restroomName) {
+    if (confirm(`Start checklist for ${restroomName}?`)) {
+        window.location.href = `checklist.php?restroom_id=${restroomId}`;
+    }
+}
+
+// =============================================
+// INITIALIZATION
+// =============================================
+document.addEventListener('DOMContentLoaded', () => {
+    loadAssignedRestrooms();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(loadAssignedRestrooms, 30000);
+});
+</script>
 </body>
 </html>
