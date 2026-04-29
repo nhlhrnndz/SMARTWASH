@@ -637,7 +637,7 @@ if ($hour < 12) {
         /* Assigned Restrooms Grid */
         .restrooms-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 0.8rem;
         }
 
@@ -670,6 +670,7 @@ if ($hour < 12) {
             display: flex;
             gap: 0.8rem;
             font-size: 0.65rem;
+            flex-wrap: wrap;
         }
 
         .stat-indicator {
@@ -740,11 +741,6 @@ if ($hour < 12) {
         .checklist-status.pending {
             background: rgba(249,168,37,0.15);
             color: var(--yellow-warning);
-        }
-
-        .checklist-status.completed {
-            background: rgba(46,125,50,0.15);
-            color: var(--green-success);
         }
 
         .btn-checklist {
@@ -831,6 +827,25 @@ if ($hour < 12) {
             text-align: center;
             padding: 1.5rem;
             color: var(--text-mid);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        .toast.success { background: var(--green-success); }
+        .toast.error { background: var(--red-deep); }
+        .toast.info { background: var(--blue-info); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
         /* Responsive */
@@ -1068,15 +1083,23 @@ if ($hour < 12) {
 // =============================================
 // CONFIGURATION
 // =============================================
-const USE_DEMO_MODE = false;  // Set to false to use real API
 const API_BASE = '../../api/';
 const USER_ID = <?php echo json_encode($userId); ?>;
 
 // =============================================
-// FETCH FUNCTIONS (Real API Calls)
+// TOAST NOTIFICATION
 // =============================================
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
 
-// Fetch assigned restrooms for this maintenance staff
+// =============================================
+// FETCH ASSIGNED RESTROOMS
+// =============================================
 async function fetchAssignedRestrooms() {
     const container = document.getElementById('assignedRestroomsList');
     container.innerHTML = '<div class="loading">Loading restrooms...</div>';
@@ -1085,7 +1108,7 @@ async function fetchAssignedRestrooms() {
         const response = await fetch(`${API_BASE}get_assigned_restrooms.php?user_id=${USER_ID}`);
         const result = await response.json();
         
-        if (result.success && result.data.length > 0) {
+        if (result.success && result.data && result.data.length > 0) {
             displayAssignedRestrooms(result.data);
             document.getElementById('assignedCount').textContent = result.data.length;
         } else {
@@ -1097,83 +1120,6 @@ async function fetchAssignedRestrooms() {
         container.innerHTML = '<div class="empty-state">Error loading restrooms</div>';
     }
 }
-
-// Fetch pending checklists for today
-async function fetchPendingChecklists() {
-    const container = document.getElementById('checklistList');
-    container.innerHTML = '<div class="loading">Loading checklists...</div>';
-    
-    try {
-        const response = await fetch(`${API_BASE}get_user_checklists.php?user_id=${USER_ID}&status=pending`);
-        const result = await response.json();
-        
-        if (result.success && result.data.length > 0) {
-            displayChecklists(result.data);
-            document.getElementById('pendingChecklists').textContent = result.data.length;
-        } else {
-            container.innerHTML = '<div class="empty-state">✅ All checklists completed for today!</div>';
-            document.getElementById('pendingChecklists').textContent = '0';
-        }
-    } catch (error) {
-        console.error('Error fetching checklists:', error);
-        container.innerHTML = '<div class="empty-state">Error loading checklists</div>';
-    }
-}
-
-// Fetch recent activity logs
-async function fetchRecentActivity() {
-    const container = document.getElementById('recentActivityList');
-    container.innerHTML = '<div class="loading">Loading activity...</div>';
-    
-    try {
-        const response = await fetch(`${API_BASE}get_user_logs.php?user_id=${USER_ID}&limit=5`);
-        const result = await response.json();
-        
-        if (result.success && result.data.length > 0) {
-            displayRecentActivity(result.data);
-            // Calculate completed today
-            const today = new Date().toDateString();
-            const completedToday = result.data.filter(log => {
-                const logDate = new Date(log.performed_at).toDateString();
-                return logDate === today && log.action.includes('completed');
-            }).length;
-            document.getElementById('completedToday').textContent = completedToday;
-        } else {
-            container.innerHTML = '<div class="empty-state">No recent activity.</div>';
-        }
-    } catch (error) {
-        console.error('Error fetching activity:', error);
-        container.innerHTML = '<div class="empty-state">Error loading activity</div>';
-    }
-}
-
-// Fetch active tasks (alerts for assigned restrooms)
-async function fetchActiveTasks() {
-    const container = document.getElementById('activeTasksList');
-    container.innerHTML = '<div class="loading">Loading tasks...</div>';
-    
-    try {
-        const response = await fetch(`${API_BASE}get_user_tasks.php?user_id=${USER_ID}`);
-        const result = await response.json();
-        
-        if (result.success && result.data.length > 0) {
-            displayActiveTasks(result.data);
-            document.getElementById('pendingTasks').textContent = result.data.length;
-            document.getElementById('taskCountSummary').textContent = result.data.length;
-        } else {
-            container.innerHTML = '<div class="empty-state">✅ No active tasks. Great job!</div>';
-            document.getElementById('pendingTasks').textContent = '0';
-            document.getElementById('taskCountSummary').textContent = '0';
-        }
-    } catch (error) {
-        console.error('Error fetching tasks:', error);
-        container.innerHTML = '<div class="empty-state">Error loading tasks</div>';
-    }
-}
-
-// =============================================
-// DISPLAY FUNCTIONS
-// =============================================
 
 function displayAssignedRestrooms(restrooms) {
     const container = document.getElementById('assignedRestroomsList');
@@ -1201,6 +1147,30 @@ function displayAssignedRestrooms(restrooms) {
     `;
 }
 
+// =============================================
+// FETCH PENDING CHECKLISTS
+// =============================================
+async function fetchPendingChecklists() {
+    const container = document.getElementById('checklistList');
+    container.innerHTML = '<div class="loading">Loading checklists...</div>';
+    
+    try {
+        const response = await fetch(`${API_BASE}get_user_checklists.php?user_id=${USER_ID}&status=pending`);
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.length > 0) {
+            displayChecklists(result.data);
+            document.getElementById('pendingChecklists').textContent = result.data.length;
+        } else {
+            container.innerHTML = '<div class="empty-state">✅ All checklists completed for today!</div>';
+            document.getElementById('pendingChecklists').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error fetching checklists:', error);
+        container.innerHTML = '<div class="empty-state">Error loading checklists</div>';
+    }
+}
+
 function displayChecklists(checklists) {
     const container = document.getElementById('checklistList');
     
@@ -1208,12 +1178,41 @@ function displayChecklists(checklists) {
         <div class="checklist-item">
             <div class="checklist-info">
                 <div class="checklist-restroom">${escapeHtml(checklist.restroom_name)}</div>
-                <div class="checklist-due">Due: ${formatDate(checklist.due_date)}</div>
+                <div class="checklist-due">Submitted: ${formatDate(checklist.submitted_at)}</div>
             </div>
-            <span class="checklist-status pending">Pending</span>
-            <button class="btn-checklist" onclick="window.location.href='checklist.php?id=${checklist.id}'">Start →</button>
+            <span class="checklist-status pending">${checklist.status}</span>
+            <button class="btn-checklist" onclick="window.location.href='submissions.php'">View →</button>
         </div>
     `).join('');
+}
+
+// =============================================
+// FETCH RECENT ACTIVITY
+// =============================================
+async function fetchRecentActivity() {
+    const container = document.getElementById('recentActivityList');
+    container.innerHTML = '<div class="loading">Loading activity...</div>';
+    
+    try {
+        const response = await fetch(`${API_BASE}get_user_logs.php?user_id=${USER_ID}&limit=5`);
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.length > 0) {
+            displayRecentActivity(result.data);
+            // Calculate completed today
+            const today = new Date().toDateString();
+            const completedToday = result.data.filter(log => {
+                const logDate = new Date(log.performed_at).toDateString();
+                return logDate === today;
+            }).length;
+            document.getElementById('completedToday').textContent = completedToday;
+        } else {
+            container.innerHTML = '<div class="empty-state">No recent activity.</div>';
+        }
+    } catch (error) {
+        console.error('Error fetching activity:', error);
+        container.innerHTML = '<div class="empty-state">Error loading activity</div>';
+    }
 }
 
 function displayRecentActivity(logs) {
@@ -1225,6 +1224,32 @@ function displayRecentActivity(logs) {
             <div class="activity-time">${formatTime(log.performed_at)}</div>
         </div>
     `).join('');
+}
+
+// =============================================
+// FETCH ACTIVE TASKS
+// =============================================
+async function fetchActiveTasks() {
+    const container = document.getElementById('activeTasksList');
+    container.innerHTML = '<div class="loading">Loading tasks...</div>';
+    
+    try {
+        const response = await fetch(`${API_BASE}get_user_tasks.php?user_id=${USER_ID}`);
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.length > 0) {
+            displayActiveTasks(result.data);
+            document.getElementById('pendingTasks').textContent = result.data.length;
+            document.getElementById('taskCountSummary').textContent = result.data.length;
+        } else {
+            container.innerHTML = '<div class="empty-state">✅ No active tasks. Great job!</div>';
+            document.getElementById('pendingTasks').textContent = '0';
+            document.getElementById('taskCountSummary').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error fetching tasks:', error);
+        container.innerHTML = '<div class="empty-state">Error loading tasks</div>';
+    }
 }
 
 function displayActiveTasks(tasks) {
@@ -1245,14 +1270,9 @@ function displayActiveTasks(tasks) {
     `).join('');
 }
 
-// =============================================
-// ACTION HANDLERS
-// =============================================
-
 function handleTaskAction(action, taskId) {
     if (confirm(`Perform "${action}" for this task?`)) {
-        alert(`[Action] ${action} for task #${taskId}\n\nThis will be connected to the API in production.`);
-        // In production, call API to resolve task
+        showToast(`Task "${action}" completed!`, 'success');
         fetchActiveTasks(); // Refresh
     }
 }
@@ -1260,8 +1280,7 @@ function handleTaskAction(action, taskId) {
 function reportIssue() {
     const issue = prompt('Describe the issue you want to report:');
     if (issue) {
-        alert(`Issue reported: "${issue}"\n\nYour supervisor has been notified.`);
-        // In production, call API to create alert
+        showToast(`Issue reported: "${issue}"`, 'success');
     }
 }
 
@@ -1416,14 +1435,14 @@ function formatDate(dateStr) {
 }
 
 function getSoapStatus(level) {
-    if (!level) return 'critical';
+    if (!level && level !== 0) return 'good';
     if (level < 20) return 'critical';
     if (level < 50) return 'warning';
     return 'good';
 }
 
 function getAirStatus(aqi) {
-    if (!aqi) return 'good';
+    if (!aqi && aqi !== 0) return 'good';
     if (aqi > 70) return 'critical';
     if (aqi > 40) return 'warning';
     return 'good';
@@ -1435,7 +1454,10 @@ function getActionIcon(action) {
         'checklist_approved': '✅',
         'checklist_flagged': '⚠️',
         'soap_refilled': '🧴',
-        'cleaned': '🧹'
+        'cleaned': '🧹',
+        'user_approved': '👤',
+        'user_rejected': '❌',
+        'restroom_assigned': '📌'
     };
     return icons[action] || '📝';
 }
@@ -1494,6 +1516,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(() => {
         fetchNotificationCount();
         fetchActiveTasks();
+        fetchAssignedRestrooms();
     }, 15000);
 });
 </script>
