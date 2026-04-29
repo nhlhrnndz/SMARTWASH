@@ -725,24 +725,23 @@ $current_page = basename($_SERVER['PHP_SELF']);
             opacity: 0.6;
         }
 
-        /* Demo Mode Badge */
-        .demo-badge {
+        /* Toast */
+        .toast {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: var(--yellow-warning);
-            color: var(--text-dark);
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            color: white;
             z-index: 1000;
-            cursor: pointer;
-            transition: opacity 0.2s;
+            animation: slideIn 0.3s ease;
         }
-
-        .demo-badge:hover {
-            opacity: 0.8;
+        .toast.success { background: var(--green-success); }
+        .toast.error { background: var(--red-deep); }
+        .toast.info { background: var(--blue-info); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
         /* Responsive */
@@ -832,21 +831,20 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     </div>
                     
                     <!-- Dropdown -->
-                    <!-- Dropdown -->
-<div class="notification-dropdown" id="notificationDropdown" style="display: none;">
-    <div class="dropdown-header">
-        <span>🔔 Notifications</span>
-        <button id="markAllReadBtn" class="mark-all-read">Mark all read</button>
-    </div>
-    <div id="dropdownNotificationsList">
-        <div class="dropdown-loading">Loading notifications...</div>
-    </div>
-    <div class="dropdown-footer">
-        <span style="font-size: 0.7rem; color: var(--text-mid); opacity: 0.6;">
-            Click any notification to go to the relevant page
-        </span>
-    </div>
-</div>
+                    <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
+                        <div class="dropdown-header">
+                            <span>🔔 Notifications</span>
+                            <button id="markAllReadBtn" class="mark-all-read">Mark all read</button>
+                        </div>
+                        <div id="dropdownNotificationsList">
+                            <div class="dropdown-loading">Loading notifications...</div>
+                        </div>
+                        <div class="dropdown-footer">
+                            <span style="font-size: 0.7rem; color: var(--text-mid); opacity: 0.6;">
+                                Click any notification to go to the relevant page
+                            </span>
+                        </div>
+                    </div>
                 </div>
                 
                 <form method="POST" action="../../auth/logout.php" style="margin:0;">
@@ -877,7 +875,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <span>Total Facilities</span>
                     <div class="stat-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg></div>
                 </div>
-                <div class="stat-value" id="totalRestrooms">8</div>
+                <div class="stat-value" id="totalRestrooms">0</div>
                 <div class="stat-label">Active Restrooms</div>
             </div>
             <div class="stat-card" onclick="location.href='alerts.php'">
@@ -885,7 +883,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <span>Active Alerts</span>
                     <div class="stat-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v4a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg></div>
                 </div>
-                <div class="stat-value" id="activeAlerts">5</div>
+                <div class="stat-value" id="activeAlerts">0</div>
                 <div class="stat-label">Need Attention</div>
             </div>
             <div class="stat-card" onclick="location.href='checklists.php'">
@@ -893,7 +891,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <span>Pending Review</span>
                     <div class="stat-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg></div>
                 </div>
-                <div class="stat-value" id="pendingChecklists">3</div>
+                <div class="stat-value" id="pendingChecklists">0</div>
                 <div class="stat-label">Checklists to Review</div>
             </div>
             <div class="stat-card" onclick="location.href='vape_incidents.php'">
@@ -901,7 +899,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <span>Today's Incidents</span>
                     <div class="stat-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6.672 1.911a1 1 0 10-1.932.518l.259.966a1 1 0 001.932-.518l-.26-.966zM2.429 4.74a1 1 0 10-.518 1.932l.966.259a1 1 0 00.518-1.932l-.966-.26zm8.814 3.748a1 1 0 00-1.414-1.414L6.5 10.1l-1.5-1.5a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/><path d="M16 15.5a2.5 2.5 0 00-5 0v1a2.5 2.5 0 005 0v-1z"/></svg></div>
                 </div>
-                <div class="stat-value" id="todayIncidents">2</div>
+                <div class="stat-value" id="todayIncidents">0</div>
                 <div class="stat-label">Vape/Smoke Events</div>
             </div>
         </div>
@@ -978,68 +976,152 @@ $current_page = basename($_SERVER['PHP_SELF']);
     </main>
 </div>
 
-<!-- Demo Mode Indicator -->
-<div class="demo-badge" onclick="toggleDemoMode()" title="Click to toggle between Demo and Live mode">
-    🧪 DEMO MODE | Using Sample Data
-</div>
-
 <script>
 // =============================================
 // CONFIGURATION
 // =============================================
-const USE_DEMO_MODE = true;
+const USE_DEMO_MODE = false;  // Set to false to use real API
 const API_BASE = '../../api/';
 
 // =============================================
-// DEMO DATA
+// FETCH REAL DATA FROM API
 // =============================================
-const DEMO_DATA = {
-    activeAlerts: [
-        { id: 1, restroom_name: 'GLR1 - Ground Left', type: 'Soap Low', severity: 'warning', created_at: '2026-04-28 09:30:00' },
-        { id: 2, restroom_name: 'GLR2 - Ground Right', type: 'Vape Detected', severity: 'critical', created_at: '2026-04-28 10:15:00' },
-        { id: 3, restroom_name: '2F-MR - 2nd Floor Main', type: 'Air Quality Poor', severity: 'critical', created_at: '2026-04-28 10:45:00' },
-        { id: 4, restroom_name: '3F-CR - 3rd Floor CR', type: 'Smoke Detected', severity: 'critical', created_at: '2026-04-28 11:00:00' },
-        { id: 5, restroom_name: '1F-FR - 1st Floor Front', type: 'Soap Low', severity: 'warning', created_at: '2026-04-28 08:20:00' }
-    ],
+
+async function fetchActiveAlerts() {
+    const container = document.getElementById('activeAlertsList');
+    container.innerHTML = '<div class="loading">Loading alerts...</div>';
     
-    restrooms: [
-        { id: 1, name: 'GLR1 - Ground Left', soap_level: 85, air_quality: 32, vape_detected: false, smoke_detected: false, has_critical: false, has_warning: false },
-        { id: 2, name: 'GLR2 - Ground Right', soap_level: 45, air_quality: 28, vape_detected: true, smoke_detected: false, has_critical: true, has_warning: false },
-        { id: 3, name: '1F-FR - 1st Floor Front', soap_level: 12, air_quality: 55, vape_detected: false, smoke_detected: false, has_critical: false, has_warning: true },
-        { id: 4, name: '1F-RR - 1st Floor Rear', soap_level: 92, air_quality: 25, vape_detected: false, smoke_detected: false, has_critical: false, has_warning: false },
-        { id: 5, name: '2F-MR - 2nd Floor Main', soap_level: 67, air_quality: 85, vape_detected: false, smoke_detected: false, has_critical: true, has_warning: false },
-        { id: 6, name: '2F-LR - 2nd Floor Left', soap_level: 78, air_quality: 42, vape_detected: false, smoke_detected: false, has_critical: false, has_warning: true },
-        { id: 7, name: '3F-CR - 3rd Floor CR', soap_level: 95, air_quality: 18, vape_detected: false, smoke_detected: true, has_critical: true, has_warning: false },
-        { id: 8, name: '3F-NR - 3rd Floor North', soap_level: 88, air_quality: 35, vape_detected: false, smoke_detected: false, has_critical: false, has_warning: false }
-    ],
-    
-    incidents: [
-        { id: 1, type: 'vape', restroom_name: 'GLR2 - Ground Right', timestamp: '2026-04-28 10:15:00' },
-        { id: 2, type: 'smoke', restroom_name: '3F-CR - 3rd Floor CR', timestamp: '2026-04-28 09:45:00' },
-        { id: 3, type: 'vape', restroom_name: '2F-MR - 2nd Floor Main', timestamp: '2026-04-27 16:20:00' },
-        { id: 4, type: 'vape', restroom_name: 'GLR1 - Ground Left', timestamp: '2026-04-27 14:30:00' },
-        { id: 5, type: 'smoke', restroom_name: '1F-RR - 1st Floor Rear', timestamp: '2026-04-27 11:15:00' }
-    ],
-    
-    checklists: [
-        { id: 1, restroom_name: 'GLR1 - Ground Left', staff_name: 'Rey M. Santos', rating: 5, submitted_at: '2026-04-28 09:00:00' },
-        { id: 2, restroom_name: 'GLR2 - Ground Right', staff_name: 'Maria L. Cruz', rating: 3, submitted_at: '2026-04-28 09:30:00' },
-        { id: 3, restroom_name: '1F-FR - 1st Floor Front', staff_name: 'Rey M. Santos', rating: 4, submitted_at: '2026-04-28 10:00:00' }
-    ],
-    
-    maintenanceLogs: [
-        { id: 1, action: 'Soap refilled', restroom_name: '1F-FR - 1st Floor Front', staff_name: 'Rey M. Santos', timestamp: '2026-04-28 09:15:00' },
-        { id: 2, action: 'Air freshener triggered', restroom_name: '2F-MR - 2nd Floor Main', staff_name: 'System Auto', timestamp: '2026-04-28 08:45:00' },
-        { id: 3, action: 'Vape incident reported', restroom_name: 'GLR2 - Ground Right', staff_name: 'Sensor', timestamp: '2026-04-28 10:15:00' },
-        { id: 4, action: 'Cleaned and sanitized', restroom_name: '3F-CR - 3rd Floor CR', staff_name: 'Maria L. Cruz', timestamp: '2026-04-28 08:00:00' },
-        { id: 5, action: 'Soap refilled', restroom_name: 'GLR1 - Ground Left', staff_name: 'Rey M. Santos', timestamp: '2026-04-28 07:30:00' }
-    ],
-    
-    airQualityReadings: {
-        labels: ['00:00', '02:00', '04:00', '06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'],
-        values: [28, 25, 22, 30, 45, 68, 72, 65, 58, 42, 35, 30]
+    try {
+        const response = await fetch(API_BASE + 'get_alerts.php?status=active&limit=5');
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.length > 0) {
+            displayActiveAlerts(result.data);
+            document.getElementById('activeAlerts').textContent = result.data.length;
+        } else {
+            container.innerHTML = '<div class="empty-state">✅ No active alerts</div>';
+            document.getElementById('activeAlerts').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error fetching alerts:', error);
+        container.innerHTML = '<div class="empty-state">Error loading alerts</div>';
     }
-};
+}
+
+async function fetchRestroomStatus() {
+    const container = document.getElementById('restroomStatusGrid');
+    container.innerHTML = '<div class="loading">Loading restrooms...</div>';
+    
+    try {
+        const response = await fetch(API_BASE + 'get_all_restrooms.php');
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.length > 0) {
+            displayRestroomStatus(result.data);
+            document.getElementById('totalRestrooms').textContent = result.data.length;
+        } else {
+            container.innerHTML = '<div class="empty-state">No restrooms found</div>';
+            document.getElementById('totalRestrooms').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error fetching restrooms:', error);
+        container.innerHTML = '<div class="empty-state">Error loading restrooms</div>';
+    }
+}
+
+async function fetchIncidents() {
+    const container = document.getElementById('incidentsList');
+    container.innerHTML = '<div class="loading">Loading incidents...</div>';
+    
+    try {
+        const response = await fetch(API_BASE + 'get_incidents.php?days=7&limit=5');
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.length > 0) {
+            displayIncidents(result.data);
+            // Count today's incidents
+            const today = new Date().toDateString();
+            const todayIncidents = result.data.filter(i => {
+                const incidentDate = new Date(i.timestamp).toDateString();
+                return incidentDate === today;
+            }).length;
+            document.getElementById('todayIncidents').textContent = todayIncidents;
+        } else {
+            container.innerHTML = '<div class="empty-state">No recent incidents</div>';
+            document.getElementById('todayIncidents').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error fetching incidents:', error);
+        container.innerHTML = '<div class="empty-state">Error loading incidents</div>';
+    }
+}
+
+async function fetchPendingChecklists() {
+    const container = document.getElementById('pendingChecklistsList');
+    container.innerHTML = '<div class="loading">Loading checklists...</div>';
+    
+    try {
+        const response = await fetch(API_BASE + 'get_checklists.php?status=pending');
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.length > 0) {
+            displayPendingChecklists(result.data);
+            document.getElementById('pendingChecklists').textContent = result.data.length;
+        } else {
+            container.innerHTML = '<div class="empty-state">No pending checklists</div>';
+            document.getElementById('pendingChecklists').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error fetching checklists:', error);
+        container.innerHTML = '<div class="empty-state">Error loading checklists</div>';
+    }
+}
+
+async function fetchMaintenanceLogs() {
+    const container = document.getElementById('maintenanceLogList');
+    container.innerHTML = '<div class="loading">Loading logs...</div>';
+    
+    try {
+        const response = await fetch(API_BASE + 'get_maintenance_logs.php?limit=5');
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.length > 0) {
+            displayMaintenanceLogs(result.data);
+        } else {
+            container.innerHTML = '<div class="empty-state">No recent maintenance logs</div>';
+        }
+    } catch (error) {
+        console.error('Error fetching logs:', error);
+        container.innerHTML = '<div class="empty-state">Error loading logs</div>';
+    }
+}
+
+async function fetchAirQualityChart() {
+    try {
+        const response = await fetch(API_BASE + 'get_air_quality.php?hours=24');
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.length > 0) {
+            displayAirQualityChart({
+                labels: result.data.map(r => r.hour),
+                values: result.data.map(r => r.aqi)
+            });
+        } else {
+            // Fallback to demo data if no real data
+            displayAirQualityChart({
+                labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                values: [32, 28, 35, 42, 38, 30]
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching air quality:', error);
+        // Fallback to demo data
+        displayAirQualityChart({
+            labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+            values: [32, 28, 35, 42, 38, 30]
+        });
+    }
+}
 
 // =============================================
 // DISPLAY FUNCTIONS
@@ -1048,15 +1130,10 @@ const DEMO_DATA = {
 function displayActiveAlerts(alerts) {
     const container = document.getElementById('activeAlertsList');
     
-    if (!alerts || alerts.length === 0) {
-        container.innerHTML = '<div class="empty-state">✅ No active alerts</div>';
-        return;
-    }
-    
     container.innerHTML = alerts.slice(0, 5).map(alert => `
         <div class="alert-item">
             <div class="alert-info">
-                <div class="alert-badge ${alert.severity}"></div>
+                <div class="alert-badge ${alert.severity || 'warning'}"></div>
                 <div class="alert-details">
                     <div class="alert-location">${escapeHtml(alert.restroom_name)}</div>
                     <div class="alert-type">${escapeHtml(alert.type)}</div>
@@ -1070,29 +1147,27 @@ function displayActiveAlerts(alerts) {
 function displayRestroomStatus(restrooms) {
     const container = document.getElementById('restroomStatusGrid');
     
-    if (!restrooms || restrooms.length === 0) {
-        container.innerHTML = '<div class="empty-state">No restrooms found</div>';
-        return;
-    }
-    
     container.innerHTML = `
         <div class="restrooms-grid">
-            ${restrooms.map(restroom => {
-                const statusClass = restroom.has_critical ? 'critical' : (restroom.has_warning ? 'warning' : '');
+            ${restrooms.slice(0, 6).map(restroom => {
+                const soapLevel = restroom.soap_level ?? 100;
+                const airQuality = restroom.air_quality ?? 0;
+                const hasCritical = soapLevel < 20 || airQuality > 70;
+                const hasWarning = soapLevel < 50 || airQuality > 40;
+                const statusClass = hasCritical ? 'critical' : (hasWarning ? 'warning' : '');
+                
                 return `
                     <div class="restroom-card ${statusClass}" onclick="location.href='live_monitoring.php?restroom_id=${restroom.id}'">
                         <div class="restroom-name">${escapeHtml(restroom.name)}</div>
                         <div class="restroom-stats">
                             <div class="stat-indicator">
-                                <div class="stat-dot ${getSoapStatus(restroom.soap_level)}"></div>
-                                <span>🧴 ${restroom.soap_level}%</span>
+                                <div class="stat-dot ${getSoapStatus(soapLevel)}"></div>
+                                <span>🧴 ${soapLevel}%</span>
                             </div>
                             <div class="stat-indicator">
-                                <div class="stat-dot ${getAirStatus(restroom.air_quality)}"></div>
-                                <span>🌬️ ${restroom.air_quality}</span>
+                                <div class="stat-dot ${getAirStatus(airQuality)}"></div>
+                                <span>🌬️ ${airQuality}</span>
                             </div>
-                            ${restroom.vape_detected ? '<span class="stat-indicator" style="color: var(--red-deep);">🚭 VAPE</span>' : ''}
-                            ${restroom.smoke_detected ? '<span class="stat-indicator" style="color: var(--orange-critical);">🔥 SMOKE</span>' : ''}
                         </div>
                     </div>
                 `;
@@ -1103,11 +1178,6 @@ function displayRestroomStatus(restrooms) {
 
 function displayIncidents(incidents) {
     const container = document.getElementById('incidentsList');
-    
-    if (!incidents || incidents.length === 0) {
-        container.innerHTML = '<div class="empty-state">No recent incidents</div>';
-        return;
-    }
     
     container.innerHTML = incidents.slice(0, 5).map(incident => `
         <div class="incident-item">
@@ -1123,23 +1193,18 @@ function displayIncidents(incidents) {
 function displayPendingChecklists(checklists) {
     const container = document.getElementById('pendingChecklistsList');
     
-    if (!checklists || checklists.length === 0) {
-        container.innerHTML = '<div class="empty-state">No pending checklists</div>';
-        return;
-    }
-    
-    container.innerHTML = checklists.map(checklist => `
+    container.innerHTML = checklists.slice(0, 5).map(checklist => `
         <div class="checklist-item">
             <div class="checklist-info">
-                <span class="checklist-rating">${checklist.rating}/5</span>
+                <span class="checklist-rating">${checklist.rating || 0}/5</span>
                 <div>
                     <div><strong>${escapeHtml(checklist.restroom_name)}</strong></div>
                     <div class="alert-type">by ${escapeHtml(checklist.staff_name)}</div>
                 </div>
             </div>
             <div class="checklist-actions">
-                <button class="btn-approve" onclick="approveChecklist(${checklist.id})" title="Approve">✅</button>
-                <button class="btn-flag" onclick="flagChecklist(${checklist.id})" title="Flag for review">⚠️</button>
+                <button class="btn-approve" onclick="window.location.href='checklists.php'">✅</button>
+                <button class="btn-flag" onclick="window.location.href='checklists.php'">⚠️</button>
             </div>
         </div>
     `).join('');
@@ -1148,15 +1213,10 @@ function displayPendingChecklists(checklists) {
 function displayMaintenanceLogs(logs) {
     const container = document.getElementById('maintenanceLogList');
     
-    if (!logs || logs.length === 0) {
-        container.innerHTML = '<div class="empty-state">No recent maintenance logs</div>';
-        return;
-    }
-    
     container.innerHTML = logs.slice(0, 5).map(log => `
         <div class="log-item">
             <div><strong>${escapeHtml(log.action)}</strong> - ${escapeHtml(log.restroom_name)}</div>
-            <div class="log-time">by ${escapeHtml(log.staff_name)} • ${formatTime(log.timestamp)}</div>
+            <div class="log-time">by ${escapeHtml(log.staff_name)} • ${formatTime(log.performed_at)}</div>
         </div>
     `).join('');
 }
@@ -1205,7 +1265,7 @@ function displayAirQualityChart(data) {
                     grid: { color: 'rgba(0,0,0,0.05)' }
                 },
                 x: { 
-                    title: { display: true, text: 'Time (last 24h)', font: { size: 10 } },
+                    title: { display: true, text: 'Time', font: { size: 10 } },
                     ticks: { maxRotation: 45, minRotation: 45 }
                 }
             }
@@ -1219,24 +1279,6 @@ function displayAirQualityChart(data) {
             <div class="alert-time">${avgAQI > 70 ? '⚠️ Poor Air Quality' : (avgAQI > 40 ? '🟡 Moderate' : '✅ Good')}</div>
         </div>
     `;
-}
-
-// =============================================
-// ACTION FUNCTIONS
-// =============================================
-
-function approveChecklist(id) {
-    if (USE_DEMO_MODE) {
-        alert(`[DEMO] Checklist #${id} approved. In live mode, this would update the database.`);
-        fetchPendingChecklists();
-    }
-}
-
-function flagChecklist(id) {
-    if (USE_DEMO_MODE) {
-        alert(`[DEMO] Checklist #${id} flagged. In live mode, this would update the database.`);
-        fetchPendingChecklists();
-    }
 }
 
 // =============================================
@@ -1274,7 +1316,7 @@ async function loadNotificationDropdown() {
         const response = await fetch(API_BASE + 'get_notifications.php?limit=10');
         const result = await response.json();
         
-        if (result.success && result.data.notifications.length > 0) {
+        if (result.success && result.data.notifications && result.data.notifications.length > 0) {
             const notifications = result.data.notifications;
             
             container.innerHTML = notifications.map(n => `
@@ -1288,7 +1330,6 @@ async function loadNotificationDropdown() {
                 </div>
             `).join('');
             
-            // Update badge after showing dropdown
             const badge = document.getElementById('notificationBadge');
             if (result.data.unread_count > 0) {
                 badge.textContent = result.data.unread_count;
@@ -1332,7 +1373,6 @@ function getNotificationLink(type) {
 }
 
 async function handleNotificationClick(id, type) {
-    // Mark as read first
     try {
         await fetch(API_BASE + 'mark_notification_read.php', {
             method: 'POST',
@@ -1343,7 +1383,6 @@ async function handleNotificationClick(id, type) {
         console.error('Error marking notification read:', error);
     }
     
-    // Close dropdown and navigate
     closeDropdown();
     window.location.href = getNotificationLink(type);
 }
@@ -1353,7 +1392,7 @@ async function markAllNotificationsRead() {
         const response = await fetch(API_BASE + 'get_notifications.php?limit=100');
         const result = await response.json();
         
-        if (result.success && result.data.notifications.length > 0) {
+        if (result.success && result.data.notifications && result.data.notifications.length > 0) {
             for (const n of result.data.notifications) {
                 if (!n.is_read) {
                     await fetch(API_BASE + 'mark_notification_read.php', {
@@ -1365,7 +1404,6 @@ async function markAllNotificationsRead() {
             }
         }
         
-        // Refresh dropdown and badge
         await loadNotificationDropdown();
         await fetchNotificationCount();
         closeDropdown();
@@ -1397,55 +1435,6 @@ function closeDropdown() {
     }
 }
 
-// Auto-refresh notification count every 15 seconds
-setInterval(fetchNotificationCount, 15000);
-
-// =============================================
-// FETCH FUNCTIONS
-// =============================================
-
-function fetchActiveAlerts() {
-    if (USE_DEMO_MODE) {
-        displayActiveAlerts(DEMO_DATA.activeAlerts);
-        return;
-    }
-}
-
-function fetchRestroomStatus() {
-    if (USE_DEMO_MODE) {
-        displayRestroomStatus(DEMO_DATA.restrooms);
-        return;
-    }
-}
-
-function fetchIncidents() {
-    if (USE_DEMO_MODE) {
-        displayIncidents(DEMO_DATA.incidents);
-        return;
-    }
-}
-
-function fetchPendingChecklists() {
-    if (USE_DEMO_MODE) {
-        displayPendingChecklists(DEMO_DATA.checklists);
-        return;
-    }
-}
-
-function fetchMaintenanceLogs() {
-    if (USE_DEMO_MODE) {
-        displayMaintenanceLogs(DEMO_DATA.maintenanceLogs);
-        return;
-    }
-}
-
-function fetchAirQualityChart() {
-    if (USE_DEMO_MODE) {
-        displayAirQualityChart(DEMO_DATA.airQualityReadings);
-        return;
-    }
-}
-
 // =============================================
 // HELPER FUNCTIONS
 // =============================================
@@ -1473,40 +1462,24 @@ function formatTime(timestamp) {
 }
 
 function getSoapStatus(level) {
-    if (!level) return 'critical';
+    if (!level && level !== 0) return 'good';
     if (level < 20) return 'critical';
     if (level < 50) return 'warning';
     return 'good';
 }
 
 function getAirStatus(aqi) {
-    if (!aqi) return 'good';
+    if (!aqi && aqi !== 0) return 'good';
     if (aqi > 70) return 'critical';
     if (aqi > 40) return 'warning';
     return 'good';
 }
 
-function updateStatsFromData() {
-    if (USE_DEMO_MODE) {
-        document.getElementById('activeAlerts').textContent = DEMO_DATA.activeAlerts.length;
-        document.getElementById('pendingChecklists').textContent = DEMO_DATA.checklists.length;
-        document.getElementById('todayIncidents').textContent = DEMO_DATA.incidents.filter(i => {
-            const today = new Date().toDateString();
-            const incidentDate = new Date(i.timestamp).toDateString();
-            return today === incidentDate;
-        }).length;
-    }
-}
-
-function toggleDemoMode() {
-    if (confirm('Toggle between Demo and Live mode?\n\nCurrently in: ' + (USE_DEMO_MODE ? 'DEMO MODE' : 'LIVE MODE') + '\n\nNote: Live mode requires API endpoints to be implemented.')) {
-        window.location.reload();
-    }
-}
-
 // =============================================
 // AUTO-REFRESH & INITIALIZATION
 // =============================================
+
+let refreshInterval;
 
 function initDashboard() {
     fetchActiveAlerts();
@@ -1515,7 +1488,6 @@ function initDashboard() {
     fetchPendingChecklists();
     fetchMaintenanceLogs();
     fetchAirQualityChart();
-    updateStatsFromData();
     fetchNotificationCount();
 }
 
@@ -1549,8 +1521,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Auto-refresh notification count every 15 seconds
-    setInterval(fetchNotificationCount, 15000);
+    // Auto-refresh every 15 seconds
+    refreshInterval = setInterval(() => {
+        fetchActiveAlerts();
+        fetchRestroomStatus();
+        fetchIncidents();
+        fetchNotificationCount();
+    }, 15000);
 });
 </script>
 </body>

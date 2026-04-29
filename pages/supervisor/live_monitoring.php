@@ -233,6 +233,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
             font-size: 0.7rem;
             color: var(--text-mid);
             opacity: 0.6;
+            text-align: right;
+            margin-top: 1rem;
         }
 
         /* Live Monitoring Specific Styles */
@@ -266,6 +268,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
             font-family: 'Playfair Display', serif;
             font-weight: 700;
             font-size: 1rem;
+        }
+        .restroom-location {
+            font-size: 0.7rem;
+            color: var(--text-mid);
+            opacity: 0.7;
+            margin-top: 0.2rem;
         }
         .status-badge {
             padding: 0.25rem 0.6rem;
@@ -320,6 +328,27 @@ $current_page = basename($_SERVER['PHP_SELF']);
             color: var(--text-mid);
         }
         
+        .stats-summary {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--gray-border);
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+        }
+        .stat-value {
+            font-weight: 700;
+            color: var(--red-deep);
+        }
+        
         .demo-badge {
             position: fixed;
             bottom: 20px;
@@ -332,6 +361,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
             font-weight: 600;
             z-index: 1000;
             cursor: pointer;
+        }
+        
+        /* Gender Icon */
+        .gender-icon {
+            font-size: 0.9rem;
+            margin-right: 0.3rem;
         }
         
         /* Responsive */
@@ -399,6 +434,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </div>
         </div>
 
+        <!-- Stats Summary -->
+        <div class="stats-summary" id="statsSummary">
+            <div class="stat-item">🏢 Total Restrooms: <span class="stat-value" id="totalCount">12</span></div>
+            <div class="stat-item">✅ Good: <span class="stat-value" id="goodCount">0</span></div>
+            <div class="stat-item">⚠️ Warning: <span class="stat-value" id="warningCount">0</span></div>
+            <div class="stat-item">🔴 Critical: <span class="stat-value" id="criticalCount">0</span></div>
+        </div>
+
         <!-- Refresh Controls -->
         <div class="refresh-bar">
             <div class="auto-refresh-toggle">
@@ -429,16 +472,25 @@ const API_BASE = '../../api/';
 let autoRefreshInterval = null;
 let isAutoRefreshEnabled = true;
 
-// Restroom Data
+// =============================================
+// ACTUAL RESTROOM DATA (HEB and CTEB Buildings)
+// =============================================
 let restrooms = [
-    { id: 1, name: 'GLR1 - Ground Left', soap: 85, air: 32, vape: false, smoke: false },
-    { id: 2, name: 'GLR2 - Ground Right', soap: 45, air: 28, vape: true, smoke: false },
-    { id: 3, name: '1F-FR - 1st Floor Front', soap: 12, air: 55, vape: false, smoke: false },
-    { id: 4, name: '1F-RR - 1st Floor Rear', soap: 92, air: 25, vape: false, smoke: false },
-    { id: 5, name: '2F-MR - 2nd Floor Main', soap: 67, air: 85, vape: false, smoke: false },
-    { id: 6, name: '2F-LR - 2nd Floor Left', soap: 78, air: 42, vape: false, smoke: false },
-    { id: 7, name: '3F-CR - 3rd Floor CR', soap: 95, air: 18, vape: false, smoke: true },
-    { id: 8, name: '3F-NR - 3rd Floor North', soap: 88, air: 35, vape: false, smoke: false }
+    // HEB Building (2nd and 3rd Floors)
+    { id: 1, name: 'HEB - 2nd Floor Male', building: 'HEB', floor: '2nd', gender: 'male', soap: 85, air: 32, vape: false, smoke: false },
+    { id: 2, name: 'HEB - 2nd Floor Female', building: 'HEB', floor: '2nd', gender: 'female', soap: 92, air: 28, vape: false, smoke: false },
+    { id: 3, name: 'HEB - 3rd Floor Male', building: 'HEB', floor: '3rd', gender: 'male', soap: 78, air: 35, vape: false, smoke: false },
+    { id: 4, name: 'HEB - 3rd Floor Female', building: 'HEB', floor: '3rd', gender: 'female', soap: 88, air: 30, vape: false, smoke: false },
+    
+    // CTEB Building (1st, 2nd, 3rd, 4th Floors)
+    { id: 5, name: 'CTEB - 1st Floor Male', building: 'CTEB', floor: '1st', gender: 'male', soap: 95, air: 25, vape: false, smoke: false },
+    { id: 6, name: 'CTEB - 1st Floor Female', building: 'CTEB', floor: '1st', gender: 'female', soap: 90, air: 22, vape: false, smoke: false },
+    { id: 7, name: 'CTEB - 2nd Floor Male', building: 'CTEB', floor: '2nd', gender: 'male', soap: 45, air: 42, vape: false, smoke: false },
+    { id: 8, name: 'CTEB - 2nd Floor Female', building: 'CTEB', floor: '2nd', gender: 'female', soap: 50, air: 38, vape: false, smoke: false },
+    { id: 9, name: 'CTEB - 3rd Floor Male', building: 'CTEB', floor: '3rd', gender: 'male', soap: 35, air: 55, vape: true, smoke: false },
+    { id: 10, name: 'CTEB - 3rd Floor Female', building: 'CTEB', floor: '3rd', gender: 'female', soap: 40, air: 48, vape: false, smoke: false },
+    { id: 11, name: 'CTEB - 4th Floor Male', building: 'CTEB', floor: '4th', gender: 'male', soap: 15, air: 72, vape: false, smoke: true },
+    { id: 12, name: 'CTEB - 4th Floor Female', building: 'CTEB', floor: '4th', gender: 'female', soap: 20, air: 65, vape: false, smoke: false }
 ];
 
 function getStatusClass(soap, air, vape, smoke) {
@@ -477,6 +529,26 @@ function getAirValueClass(air) {
     return '';
 }
 
+function getGenderIcon(gender) {
+    return gender === 'male' ? '👨' : '👩';
+}
+
+function updateStats() {
+    let good = 0, warning = 0, critical = 0;
+    
+    restrooms.forEach(r => {
+        const status = getStatusClass(r.soap, r.air, r.vape, r.smoke);
+        if (status === 'good') good++;
+        else if (status === 'warning') warning++;
+        else critical++;
+    });
+    
+    document.getElementById('goodCount').textContent = good;
+    document.getElementById('warningCount').textContent = warning;
+    document.getElementById('criticalCount').textContent = critical;
+    document.getElementById('totalCount').textContent = restrooms.length;
+}
+
 function renderRestrooms() {
     const grid = document.getElementById('restroomGrid');
     if (!grid) return;
@@ -487,11 +559,15 @@ function renderRestrooms() {
         const fillClass = getFillClass(r.soap, r.air, r.vape, r.smoke);
         const soapClass = getSoapValueClass(r.soap);
         const airClass = getAirValueClass(r.air);
+        const genderIcon = getGenderIcon(r.gender);
         
         return `
             <div class="restroom-card">
                 <div class="restroom-header">
-                    <span class="restroom-name">${escapeHtml(r.name)}</span>
+                    <div>
+                        <span class="restroom-name"><span class="gender-icon">${genderIcon}</span> ${escapeHtml(r.name)}</span>
+                        <div class="restroom-location">📍 ${escapeHtml(r.building)} Building - ${escapeHtml(r.floor)} Floor</div>
+                    </div>
                     <span class="status-badge status-${statusClass === 'good' ? 'good' : (statusClass === 'warning' ? 'warning' : 'critical')}">${statusText}</span>
                 </div>
                 <div class="restroom-body">
@@ -518,43 +594,23 @@ function renderRestrooms() {
         `;
     }).join('');
     
+    updateStats();
     document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleTimeString()}`;
 }
 
 function updateSensorData() {
-    if (!USE_DEMO_MODE) {
-        // In live mode, fetch from API
-        fetchRealTimeData();
-        return;
-    }
-    
     // Demo mode: simulate random changes
     restrooms.forEach(r => {
-        // Soap gradually decreases
-        r.soap = Math.max(0, Math.min(100, r.soap + (Math.random() - 0.6) * 3));
+        // Soap gradually decreases then refills randomly
+        r.soap = Math.max(0, Math.min(100, r.soap + (Math.random() - 0.5) * 5));
         // Air quality fluctuates
-        r.air = Math.max(0, Math.min(150, r.air + (Math.random() - 0.5) * 4));
-        // Random vape/smoke detection (5% chance to toggle)
+        r.air = Math.max(0, Math.min(150, r.air + (Math.random() - 0.5) * 5));
+        // Random vape/smoke detection (3% chance to toggle)
         if (Math.random() < 0.03) r.vape = !r.vape;
         if (Math.random() < 0.02) r.smoke = !r.smoke;
     });
     
     renderRestrooms();
-}
-
-function fetchRealTimeData() {
-    // This will be implemented when API is ready
-    fetch(API_BASE + 'get_sensors.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.restrooms) {
-                restrooms = data.restrooms;
-                renderRestrooms();
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching sensor data:', error);
-        });
 }
 
 function manualRefresh() {
@@ -608,6 +664,7 @@ function toggleDemoMode() {
 document.addEventListener('DOMContentLoaded', () => {
     renderRestrooms();
     startAutoRefresh();
+    updateStats();
     
     const autoToggle = document.getElementById('autoRefreshToggle');
     if (autoToggle) {
